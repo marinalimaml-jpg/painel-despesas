@@ -1,0 +1,3186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Acompanhamento de Despesas</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.13.216/legacy/build/pdf.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafaf9;
+      padding: 20px;
+      color: #0b0b0b;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 28px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      color: #52514e;
+      margin-bottom: 24px;
+    }
+
+    .mes-destaque {
+      font-size: 22px;
+      font-weight: 700;
+      color: #185fa5;
+      margin-bottom: 6px;
+    }
+
+    .ultima-atualizacao {
+      font-size: 11px;
+      color: #898781;
+      margin-bottom: 24px;
+    }
+    
+    .mes-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .mes-selector select {
+      padding: 8px 12px;
+      border: 0.5px solid #e1e0d9;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .resumo-executivo {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+      padding: 24px;
+      background: #f5f4f1;
+      border-radius: 12px;
+      border: 2px solid #e1e0d9;
+    }
+    
+    .resumo-executivo.superavit {
+      border-color: #0ca30c;
+    }
+    
+    .resumo-executivo.deficit {
+      border-color: #d03b3b;
+    }
+    
+    .card-kpi {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border: 0.5px solid #e1e0d9;
+    }
+    
+    .card-label {
+      font-size: 11px;
+      color: #52514e;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    
+    .card-valor {
+      font-size: 22px;
+      font-weight: 600;
+    }
+    
+    .card-valor.positivo {
+      color: #185fa5;
+    }
+    
+    .card-valor.negativo {
+      color: #a32d2d;
+    }
+    
+    .card-valor.resultado {
+      color: #0ca30c;
+    }
+    
+    .card-valor.resultado.deficit {
+      color: #a32d2d;
+    }
+    
+    section {
+      margin-bottom: 32px;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      border: 0.5px solid #e1e0d9;
+    }
+    
+    h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e1e0d9;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .input-group label {
+      font-size: 12px;
+      color: #52514e;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    input[type="number"], input[type="text"], select {
+      padding: 8px;
+      border: 0.5px solid #e1e0d9;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+    }
+    
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: #185fa5;
+      box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+    }
+    
+    button {
+      padding: 10px 16px;
+      border: 0.5px solid #e1e0d9;
+      background: #185fa5;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #0f4080;
+    }
+    
+    button.secondary {
+      background: #f5f4f1;
+      color: #52514e;
+      border: 0.5px solid #e1e0d9;
+    }
+    
+    button.secondary:hover {
+      background: #e1e0d9;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .file-hint {
+      font-size: 11px;
+      color: #898781;
+      margin-top: -8px;
+      margin-bottom: 8px;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+
+    /* Blocos por cartão — separação visual explícita exigida entre cartões */
+    .cartao-bloco {
+      border: 1.5px solid #d8d6cd;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .cartao-bloco:last-child {
+      margin-bottom: 0;
+    }
+
+    .cartao-cabecalho {
+      background: #2c2c2a;
+      color: #f0efec;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cartao-titulo {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .chevron {
+      display: inline-block;
+      width: 12px;
+      font-size: 11px;
+    }
+
+    .cartao-subtotal {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .fatura-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      background: #f5f4f1;
+      border-bottom: 1px solid #e1e0d9;
+    }
+
+    .fatura-chip {
+      background: white;
+      border: 1px solid #e1e0d9;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #52514e;
+    }
+
+    .cartao-bloco .table-container {
+      margin-top: 0;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    th {
+      background: #f5f4f1;
+      padding: 12px;
+      text-align: left;
+      font-weight: 500;
+      color: #52514e;
+      border-bottom: 1px solid #e1e0d9;
+    }
+    
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e1e0d9;
+    }
+    
+    tr:hover {
+      background: #fafaf9;
+    }
+    
+    tr.auto-classificado {
+      background: #fff8e6;
+    }
+    
+    tr.categoria-terceiro {
+      opacity: 0.65;
+    }
+
+    /* Regra — Destaque Visual de Lançamentos: cores puramente informativas,
+       nunca alteram cálculo. Prioridade quando mais de um critério bate:
+       cor da categoria (Terceiro/Reembolso) > última parcela (Regra 4). */
+    tr.linha-ultima-parcela {
+      background: #dceefc;
+    }
+
+    tr.linha-terceiro {
+      background: #fde8d0;
+      opacity: 0.75;
+    }
+
+    tr.linha-reembolso {
+      background: #e3e3e1;
+      opacity: 0.75;
+    }
+
+    .legenda-cores {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 12px;
+      color: #52514e;
+      padding: 10px 16px;
+      background: #f5f4f1;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .controle-global {
+      padding: 10px 16px;
+      background: #ececea;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      align-items: center;
+    }
+
+    .controle-global-label {
+      font-size: 12px;
+      color: #52514e;
+      margin-right: 4px;
+    }
+
+    .legenda-cores-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legenda-cores .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .swatch-azul { background: #dceefc; border: 1px solid #a9cdec; }
+    .swatch-laranja { background: #fde8d0; border: 1px solid #eabf8a; }
+    .swatch-cinza { background: #e3e3e1; border: 1px solid #c3c2be; }
+
+    .diferenca-pendente {
+      color: #8a6412 !important;
+      font-weight: 700;
+    }
+
+    tr.linha-projetada {
+      background: #eef4fb;
+      font-style: italic;
+    }
+    
+    td input, td select {
+      width: 100%;
+      padding: 6px;
+      border: 0.5px solid #e1e0d9;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    select.select-terceiro {
+      border-color: #a32d2d;
+      color: #a32d2d;
+      font-weight: 500;
+    }
+
+    .categoria-herdada {
+      display: inline-block;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: #52514e;
+    }
+    
+    .badge-auto {
+      display: inline-block;
+      background: #fbeecb;
+      color: #8a6412;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    .badge-projetado {
+      display: inline-block;
+      background: #dbe9fa;
+      color: #185fa5;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    .badge-divergente {
+      display: inline-block;
+      background: #fcebeb;
+      color: #a32d2d;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 500;
+      cursor: help;
+    }
+
+    .badge-pagamento-fatura {
+      display: inline-block;
+      background: #eaf3de;
+      color: #4a7a1f;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 500;
+      cursor: help;
+    }
+
+    .badge-revisao {
+      display: inline-block;
+      background: #fbeecb;
+      color: #8a6412;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 600;
+      cursor: help;
+    }
+
+    tr.linha-revisao {
+      background: #fffbf0;
+    }
+
+    .badge-excluido {
+      display: inline-block;
+      background: #ececea;
+      color: #6b6a66;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 600;
+      cursor: help;
+    }
+
+    tr.linha-excluida {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    tr.linha-excluida select,
+    tr.linha-excluida .categoria-herdada {
+      text-decoration: none;
+    }
+
+    .cartao-total-carregado {
+      font-size: 11px;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+
+    .parcela-mes-chip {
+      background: white;
+      border: 1px solid #f0d98c;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #8a6412;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Legenda customizada do gráfico de pizza — Regra: lista em 3 colunas,
+       alinhada à esquerda (o Chart.js não suporta esse layout nativamente) */
+    .legenda-pizza {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px 16px;
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    .legenda-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      min-width: 0;
+    }
+
+    .legenda-cor {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .legenda-nome {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .legenda-valor {
+      color: #52514e;
+      white-space: nowrap;
+    }
+
+    .legenda-pct {
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    @media (max-width: 480px) {
+      .legenda-pizza {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .info-box {
+      background: #e6f1fb;
+      border-left: 3px solid #185fa5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #185fa5;
+      margin-top: 12px;
+    }
+    
+    .info-box.erro {
+      background: #fcebeb;
+      border-left-color: #a32d2d;
+      color: #a32d2d;
+    }
+    
+    .info-box strong {
+      font-weight: 500;
+    }
+    
+    input[type="file"] {
+      padding: 8px;
+      border: 0.5px solid #e1e0d9;
+      border-radius: 6px;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1a1a19;
+        color: #f0efec;
+      }
+
+      .mes-destaque {
+        color: #3987e5;
+      }
+      
+      section, .resumo-executivo {
+        background: #2c2c2a;
+        border-color: #383835;
+      }
+      
+      .card-kpi {
+        background: #1a1a19;
+        border-color: #383835;
+      }
+      
+      h2 {
+        border-bottom-color: #383835;
+      }
+      
+      th {
+        background: #383835;
+        color: #c3c2b7;
+      }
+      
+      td {
+        border-color: #383835;
+      }
+      
+      tr:hover {
+        background: #383835;
+      }
+      
+      tr.auto-classificado {
+        background: #3a3212;
+      }
+      
+      .badge-auto {
+        background: #4a3d14;
+        color: #e0bb5a;
+      }
+      
+      input, select, button.secondary {
+        background: #1a1a19;
+        color: #f0efec;
+        border-color: #383835;
+      }
+      
+      select.select-terceiro {
+        border-color: #e57575;
+        color: #e57575;
+      }
+      
+      .mes-selector select {
+        background: #1a1a19;
+        color: #f0efec;
+        border-color: #383835;
+      }
+      
+      .info-box.erro {
+        background: #501313;
+        color: #e57575;
+      }
+
+      .cartao-bloco {
+        border-color: #383835;
+      }
+
+      .cartao-cabecalho {
+        background: #0f0f0e;
+      }
+
+      .fatura-chips {
+        background: #1a1a19;
+        border-bottom-color: #383835;
+      }
+
+      .fatura-chip {
+        background: #2c2c2a;
+        border-color: #383835;
+        color: #c3c2b7;
+      }
+
+      tr.linha-projetada {
+        background: #142433;
+      }
+
+      tr.linha-ultima-parcela {
+        background: #14314d;
+      }
+
+      tr.linha-terceiro {
+        background: #4a3418;
+      }
+
+      tr.linha-reembolso {
+        background: #3a3a37;
+      }
+
+      .legenda-cores {
+        background: #2c2c2a;
+        color: #c3c2b7;
+      }
+
+      .controle-global {
+        background: #2c2c2a;
+      }
+
+      .controle-global-label {
+        color: #c3c2b7;
+      }
+
+      .swatch-azul { background: #14314d; border-color: #2a5a8a; }
+      .swatch-laranja { background: #4a3418; border-color: #8a6a2a; }
+      .swatch-cinza { background: #3a3a37; border-color: #6a6a66; }
+
+      .diferenca-pendente {
+        color: #e0bb5a !important;
+      }
+
+      .categoria-herdada {
+        color: #c3c2b7;
+      }
+
+      .badge-projetado {
+        background: #0f2d4d;
+        color: #6ab0f0;
+      }
+
+      .badge-divergente {
+        background: #501313;
+        color: #e57575;
+      }
+
+      .badge-pagamento-fatura {
+        background: #173404;
+        color: #8fc35e;
+      }
+
+      .badge-revisao {
+        background: #4a3d14;
+        color: #e0bb5a;
+      }
+
+      tr.linha-revisao {
+        background: #3a3212;
+      }
+
+      .badge-excluido {
+        background: #383835;
+        color: #c3c2b7;
+      }
+
+      .legenda-valor {
+        color: #c3c2b7;
+      }
+
+      .parcela-mes-chip {
+        background: #2c2c2a;
+        border-color: #4a3d14;
+        color: #e0bb5a;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Painel de Acompanhamento de Despesas</h1>
+        <div id="mesDestaque" class="mes-destaque">Setembro/2026</div>
+        <p class="subtitle">Análise financeira mensal da família</p>
+        <p id="ultimaAtualizacao" class="ultima-atualizacao"></p>
+        <button class="secondary" style="padding: 4px 10px; font-size: 11px;" onclick="alternarConfiguracaoApi()">⚙ Planilha compartilhada</button>
+      </div>
+      <div class="mes-selector">
+        <label for="mesSelecionado" style="font-size: 14px; color: #52514e;">Mês:</label>
+        <select id="mesSelecionado"></select>
+      </div>
+    </div>
+
+    <div class="info-box erro" id="avisoBanco" style="display: none; margin-bottom: 20px;"></div>
+
+    <div id="configuracaoApiContainer" style="display: none; margin-bottom: 20px; padding: 16px; background: #f5f4f1; border: 1.5px solid #e1e0d9; border-radius: 10px;">
+      <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">🔗 Conectar à planilha compartilhada</div>
+      <div style="font-size: 12px; color: #52514e; margin-bottom: 10px;">
+        Cole aqui a URL do Google Apps Script (termina em <code>/exec</code>) — a mesma URL configurada por qualquer outra pessoa que use este painel.
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="text" id="urlApiInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex: 1; min-width: 240px; padding: 8px; border: 0.5px solid #e1e0d9; border-radius: 6px; font-size: 13px;" />
+        <button onclick="configurarUrlApi()">Salvar e conectar</button>
+      </div>
+    </div>
+
+    <!-- Resumo Executivo -->
+    <div class="resumo-executivo" id="resumo">
+      <div class="card-kpi">
+        <div class="card-label">Receita Mensal</div>
+        <div class="card-valor positivo" id="totalReceita">R$ 0,00</div>
+      </div>
+      <div class="card-kpi">
+        <div class="card-label">Despesas Fixas</div>
+        <div class="card-valor negativo" id="totalFixas">R$ 0,00</div>
+      </div>
+      <div class="card-kpi">
+        <div class="card-label">Despesas Cartão</div>
+        <div class="card-valor negativo" id="totalCartao">R$ 0,00</div>
+      </div>
+      <div class="card-kpi">
+        <div class="card-label">Despesas Extrato</div>
+        <div class="card-valor negativo" id="totalExtratoKpi">R$ 0,00</div>
+      </div>
+      <div class="card-kpi">
+        <div class="card-label">Total Despesas</div>
+        <div class="card-valor negativo" id="totalDespesas">R$ 0,00</div>
+      </div>
+      <div class="card-kpi">
+        <div class="card-label">Resultado</div>
+        <div class="card-valor resultado" id="resultado">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- Receitas -->
+    <section>
+      <h2>Receitas</h2>
+      <div class="grid">
+        <div class="input-group">
+          <label>Marina Salário</label>
+          <input type="number" id="marinaSalario" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Marina Caju</label>
+          <input type="number" id="marinaCaju" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Regilene Salário</label>
+          <input type="number" id="regileneSalario" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Regilene Refeição</label>
+          <input type="number" id="regileneRefeicao" placeholder="0" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Despesas Fixas -->
+    <section>
+      <h2>Despesas Fixas</h2>
+      <div class="grid">
+        <div class="input-group">
+          <label>Aluguel</label>
+          <input type="number" id="aluguel" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Condomínio</label>
+          <input type="number" id="condominio" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>IPTU</label>
+          <input type="number" id="iptu" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Energia</label>
+          <input type="number" id="energia" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Gás</label>
+          <input type="number" id="gas" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Internet</label>
+          <input type="number" id="internet" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Diarista</label>
+          <input type="number" id="diarista" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Plano de Saúde</label>
+          <input type="number" id="planoSaude" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Financ. Carro</label>
+          <input type="number" id="financCarro" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Seguro Saúde - Marina</label>
+          <input type="number" id="seguroSaudeMarina" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>MEI - Regilene</label>
+          <input type="number" id="meiRegilene" placeholder="0" />
+        </div>
+        <div class="input-group">
+          <label>Celular Marina</label>
+          <input type="number" id="celularMarina" placeholder="0" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Regra — Padronização do Recolhimento dos Blocos: ação global que
+         recolhe/expande Cartão + Extrato + Pensão de uma só vez, além do
+         controle individual que cada bloco já tem no próprio cabeçalho -->
+    <div class="actions controle-global">
+      <span class="controle-global-label">Todos os blocos (Cartão + Extrato + Pensão):</span>
+      <button class="secondary" onclick="recolherTudo()">Recolher tudo</button>
+      <button class="secondary" onclick="expandirTudo()">Expandir tudo</button>
+    </div>
+
+    <!-- Despesas de Cartão -->
+    <section>
+      <h2>Despesas de Cartão de Crédito</h2>
+
+      <div class="actions">
+        <button class="secondary" onclick="recolherTodosCartoes()">Recolher todos</button>
+        <button class="secondary" onclick="expandirTodosCartoes()">Expandir todos</button>
+      </div>
+
+      <div class="legenda-cores">
+        <span class="legenda-cores-item"><span class="swatch swatch-azul"></span> Última parcela</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-laranja"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Reembolso (fora do total)</span>
+      </div>
+
+      <div class="actions">
+        <div class="input-group" style="flex-direction: row; gap: 8px; align-items: center;">
+          <label for="arquivoUpload" style="margin: 0;">Importar Fatura(s) Itaú:</label>
+          <input type="file" id="arquivoUpload" accept=".csv,.xls,.xlsx" multiple />
+        </div>
+        <button id="btnImportar" onclick="importarArquivo()">Carregar arquivo(s)</button>
+      </div>
+      <div class="file-hint">Aceita .csv, .xls ou .xlsx — selecione mais de um arquivo de uma vez (ex: fatura da Marina + fatura da Regilene) para carregar todos juntos no mesmo mês. Fatura pode ser parcial ou completa. Categorização e reconhecimento de itens de meses anteriores são feitos automaticamente.</div>
+      
+      <div class="info-box" id="csvStatus" style="display: none;">
+        <strong>Status:</strong> <span id="csvStatusText"></span>
+      </div>
+
+      <div id="cartaoPorCartaoContainer"></div>
+
+      <div style="margin-top: 16px; padding: 16px; background: #f5f4f1; border-radius: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Cartão (Família)</div>
+            <div style="font-size: 18px; font-weight: 600; color: #a32d2d;" id="totalCartaoPropio">R$ 0,00</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Terceiros/Pensão (Excluído)</div>
+            <div style="font-size: 18px; font-weight: 600; color: #898781;" id="totalCartaoTerceiro">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regra 11 — indicador consolidado de parcelas futuras previstas -->
+      <div id="parcelasFuturasContainer" style="display: none; margin-top: 20px; padding: 16px 20px; background: #fff8e6; border: 1.5px solid #f0d98c; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <div style="font-size: 13px; font-weight: 600; color: #8a6412;">📅 Parcelas Futuras Previstas</div>
+          <div style="font-size: 20px; font-weight: 700; color: #8a6412;" id="parcelasFuturasTotal">R$ 0,00</div>
+        </div>
+        <div id="parcelasFuturasPorMes" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+
+      <div id="graficoPizzaContainer" style="margin-top: 24px; display: none;">
+        <h2 style="font-size: 14px; margin-bottom: 12px;">Gastos de cartão por categoria (realizado)</h2>
+        <div style="max-width: 380px; margin: 0 auto;">
+          <canvas id="graficoPizzaCategorias"></canvas>
+        </div>
+        <div id="graficoPizzaLegenda" class="legenda-pizza"></div>
+      </div>
+      <div id="graficoPizzaVazio" style="display: none; text-align: center; color: #898781; font-size: 13px; padding: 16px;">
+        Nenhuma despesa de cartão considerada no cálculo deste mês ainda.
+      </div>
+    </section>
+
+    <!-- Extrato da Conta Corrente -->
+    <section>
+      <h2>Extrato da Conta Corrente</h2>
+
+      <div class="actions">
+        <button class="secondary" onclick="recolherTodosExtrato()">Recolher todos</button>
+        <button class="secondary" onclick="expandirTodosExtrato()">Expandir todos</button>
+      </div>
+
+      <div class="legenda-cores">
+        <span class="legenda-cores-item"><span class="swatch swatch-laranja"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Reembolso (fora do total)</span>
+      </div>
+      <div class="actions">
+        <div class="input-group" style="flex-direction: row; gap: 8px; align-items: center;">
+          <label for="arquivoExtratoUpload" style="margin: 0;">Importar Extrato:</label>
+          <input type="file" id="arquivoExtratoUpload" accept=".csv,.xls,.xlsx,.pdf" multiple />
+        </div>
+        <button onclick="importarArquivoExtrato()">Carregar extrato(s)</button>
+      </div>
+      <div class="file-hint">Aceita .csv, .xls, .xlsx ou .pdf (extrato do Itaú). Considera apenas lançamentos de débito (PIX, TED, débito automático, boleto, compras no débito). Pagamentos de fatura de cartão identificados no extrato ficam visíveis mas não somam ao Total de Despesas, para não duplicar o que a própria fatura já conta.</div>
+
+      <div class="info-box" id="extratoStatus" style="display: none;">
+        <strong>Status:</strong> <span id="extratoStatusText"></span>
+      </div>
+
+      <div id="extratoPorContaContainer"></div>
+
+      <div style="margin-top: 16px; padding: 16px; background: #f5f4f1; border-radius: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Extrato (Família)</div>
+            <div style="font-size: 18px; font-weight: 600; color: #a32d2d;" id="totalExtratoConsiderado">R$ 0,00</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Excluído (Terceiro/Pensão/Pagto. Fatura)</div>
+            <div style="font-size: 18px; font-weight: 600; color: #898781;" id="totalExtratoExcluido">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pensão -->
+    <section>
+      <h2>Pensão</h2>
+      <div id="pensaoContainer"></div>
+    </section>
+  </div>
+
+  <script>
+    // Dados do painel
+    const dadosMeses = {};
+    const despesasCartao = {};
+    let mesSelecionado = '2026-09';
+
+    // Regra — Compartilhamento dos Dados: este painel é um arquivo HTML
+    // comum (não um Artifact publicado do Claude), justamente para poder
+    // se conectar a um backend externo — uma Planilha Google, por trás de
+    // um Google Apps Script que funciona como uma API simples de leitura e
+    // gravação. A URL desse Apps Script fica salva no localStorage DESTE
+    // navegador (é só um "endereço", não é o dado compartilhado em si —
+    // os dados de verdade moram na planilha, acessível de qualquer
+    // computador que configure a mesma URL).
+    const CHAVE_URL_API = 'painelDespesasApiUrl';
+    let urlApi = localStorage.getItem(CHAVE_URL_API) || '';
+    const ultimaAtualizacaoPorMes = {};
+
+    // Lista de meses suportados pelo painel — precisa ir além dos meses já
+    // com fatura importada porque as parcelas futuras (Bloco C) podem
+    // projetar lançamentos vários meses à frente (ex: uma compra em 12x).
+    const NOMES_MESES_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    const MESES_DISPONIVEIS = (() => {
+      const lista = [];
+      let ano = 2026, mes = 9; // começa em Setembro 2026
+      for (let i = 0; i < 30; i++) {
+        lista.push(`${ano}-${String(mes).padStart(2, '0')}`);
+        mes++;
+        if (mes > 12) { mes = 1; ano++; }
+      }
+      return lista;
+    })();
+
+    function nomeMesLegivel(mesChave) {
+      const [ano, mes] = mesChave.split('-').map(Number);
+      return `${NOMES_MESES_PT[mes - 1]} ${ano}`;
+    }
+
+    // Regra — Destaque do Mês em Análise: formato "Mês/Ano" (ex: "Setembro/2026")
+    function nomeMesDestaque(mesChave) {
+      const [ano, mes] = mesChave.split('-').map(Number);
+      return `${NOMES_MESES_PT[mes - 1]}/${ano}`;
+    }
+
+    function atualizarDestaqueMes() {
+      const el = document.getElementById('mesDestaque');
+      if (el) el.textContent = nomeMesDestaque(mesSelecionado);
+    }
+
+    // Soma "n" meses a uma chave de mês ("2026-09" + 1 -> "2026-10").
+    // Retorna null se sair do intervalo suportado (MESES_DISPONIVEIS).
+    function somarMeses(mesChave, n) {
+      const idx = MESES_DISPONIVEIS.indexOf(mesChave);
+      if (idx === -1) return null;
+      return MESES_DISPONIVEIS[idx + n] || null;
+    }
+
+    const camposFixos = [
+      'aluguel', 'condominio', 'iptu', 'energia', 'gas', 'internet',
+      'diarista', 'planoSaude', 'financCarro', 'seguroSaudeMarina',
+      'meiRegilene', 'celularMarina'
+    ];
+
+    const camposReceita = ['marinaSalario', 'marinaCaju', 'regileneSalario', 'regileneRefeicao'];
+
+    // Regra 1.1 (Bloco de Pensão) — mesmo comportamento de Receita/Fixas:
+    // cópia automática do mês anterior, edição persistida e protegida
+    const camposPensao = ['pensaoDevida'];
+
+    // Categorias fixas disponíveis para classificação da fatura
+    const categoriasDisponiveis = [
+      'Alimentação', 'Ifood', 'Supermercado', 'Farmácia', 'Saúde', 'Combustível', 'Carro', 'Uber',
+      'Compras', 'Assinaturas', 'Lazer', 'Educação', 'Serviços', 'Pet', 'Casa', 'Viagem',
+      'Reembolso', 'Outros', 'Pensão', 'Terceiro', 'Pagamento de Fatura'
+    ];
+
+    // Categorias que NÃO entram no total de despesas da família — "Terceiro"
+    // (compra de outra pessoa), "Pensão" (paga pela pensão que a usuária
+    // recebe, não sai do orçamento familiar), "Pagamento de Fatura" (Regra 9:
+    // o pagamento da fatura no extrato é só a quitação de despesas que já
+    // foram contadas nos lançamentos da própria fatura — contar de novo aqui
+    // seria duplicar) e "Reembolso" (será devolvido pela empresa — não é uma
+    // despesa líquida da família, conforme a Regra de Destaque Visual).
+    const CATEGORIAS_EXCLUIDAS_DO_CALCULO = ['Terceiro', 'Pensão', 'Pagamento de Fatura', 'Reembolso'];
+
+    function categoriaContaNoCalculo(categoria) {
+      return !CATEGORIAS_EXCLUIDAS_DO_CALCULO.includes(categoria);
+    }
+
+    // Regras de categorização automática por palavra-chave na descrição.
+    // Inclui abreviações comuns em faturas reais do Itaú (ex: "Ifd*" = iFood,
+    // nomes de mercados de bairro, farmácias, etc.). A ordem importa: "Ifood"
+    // é checada antes de "Uber" para que "Uber Eats" (entrega de comida) não
+    // seja capturado pela regra de corridas.
+    const regrasCategorizacao = [
+      { categoria: 'Ifood', padroes: ['ifood', 'ifd', '99food', 'rappi', 'uber eats', 'ubereats'] },
+      { categoria: 'Supermercado', padroes: ['supermercado', 'mercadinho', 'mercado', 'hortifruti', 'acougue', 'sacolao', 'atacadao', 'assai', 'carrefour', 'pao de acucar', 'extra hiper'] },
+      { categoria: 'Alimentação', padroes: ['restaurante', 'lanchonete', 'padaria', 'pizza', 'burguer', 'cafe', 'bar ', 'churrascaria', 'sorveteria', 'gelateria', 'pastelzim', 'confeitaria', 'padoca'] },
+      { categoria: 'Farmácia', padroes: ['farmacia', 'farma', 'extra farma', 'drogaria', 'drograria', 'drogasil', 'droga raia', 'pacheco', 'panvel', 'rd saude'] },
+      { categoria: 'Saúde', padroes: ['clinica', 'laboratorio', 'hospital', 'unimed', 'hapvida', 'amil', 'saude'] },
+      { categoria: 'Combustível', padroes: ['posto', 'combustivel', 'shell', 'ipiranga', 'petrobras', 'br mania', 'ale combustiveis', 'raizen'] },
+      { categoria: 'Carro', padroes: ['estacionamento', 'pedagio', 'sem parar', 'conectcar', 'oficina', 'auto pecas', 'pneu', 'lava rapido', 'lavajato'] },
+      { categoria: 'Uber', padroes: ['uber', '99app', '99 tecnologia', 'cabify', 'indriver'] },
+      { categoria: 'Assinaturas', padroes: ['netflix', 'spotify', 'amazon prime', 'prime video', 'disney', 'hbo', 'max ', 'youtube premium', 'globoplay', 'apple.com', 'icloud', 'deezer', 'paramount', 'canva'] },
+      { categoria: 'Compras', padroes: ['magazine luiza', 'magalu', 'amazon', 'mercado livre', 'mercadolivre', 'shopee', 'aliexpress', 'shein', 'renner', 'riachuelo', 'centauro', 'americanas', 'casas bahia', 'zara', 'cea '] },
+      { categoria: 'Lazer', padroes: ['cinema', 'ingresso', 'ingresso.com', 'sympla', 'show', 'teatro', 'parque', 'steam', 'playstation', 'xbox'] },
+      { categoria: 'Educação', padroes: ['livraria', 'curso', 'udemy', 'faculdade', 'escola', 'colegio', 'alura'] },
+      { categoria: 'Serviços', padroes: ['salao', 'barbearia', 'lavanderia', 'estetica', 'academia', 'smart fit', 'fitness'] },
+      { categoria: 'Pet', padroes: ['petshop', 'pet shop', 'petz', 'cobasi', 'veterinaria', 'veterinario', 'pet center', 'banho e tosa', 'racao', 'agropet'] },
+      { categoria: 'Casa', padroes: ['leroy merlin', 'telhanorte', 'c e c', 'casa e construcao', 'tok stok', 'mobly', 'etna'] },
+      { categoria: 'Viagem', padroes: ['gol linhas', 'azul linhas', 'latam', 'decolar', 'cvc viagens', 'booking.com', 'airbnb', 'localiza', 'movida rentacar'] }
+    ];
+
+    // Regra — Estado Inicial Recolhido: ao abrir o painel ou trocar de mês,
+    // todos os blocos (cartão, extrato e pensão) sempre iniciam recolhidos. O
+    // estado expandido de uma sessão/mês anterior nunca é mantido — só
+    // chamada nesses dois momentos, nunca depois de editar/importar/excluir,
+    // pra não fechar um bloco que o analista está usando ativamente.
+    function recolherBlocosPorPadrao() {
+      const itensCartao = obterItensComProjecoes(mesSelecionado);
+      itensCartao.forEach(item => {
+        cartoesRecolhidos[item.cartao || 'Cartão não identificado'] = true;
+      });
+      const itensExtrato = extratoConta[mesSelecionado] || [];
+      itensExtrato.forEach(item => {
+        cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = true;
+      });
+      cartoesRecolhidos['pensao'] = true;
+    }
+
+    // Busca TODOS os dados já salvos na planilha compartilhada, de uma vez,
+    // e popula os objetos em memória. Chamada uma única vez, na abertura do
+    // painel — trocar de mês depois não precisa buscar de novo, os dados
+    // de todos os meses já estão carregados.
+    async function carregarDadosCompartilhados() {
+      if (!urlApi) return;
+      try {
+        const resp = await fetch(urlApi);
+        if (!resp.ok) throw new Error('Resposta HTTP ' + resp.status);
+        const todosDados = await resp.json();
+
+        Object.keys(todosDados).forEach(chave => {
+          const partes = chave.split(':');
+          const mesChave = partes[0];
+          const secao = partes[1];
+          const registro = todosDados[chave];
+          if (!registro) return;
+
+          let valorParsed;
+          try {
+            valorParsed = JSON.parse(registro.valor);
+          } catch (e) {
+            return; // linha corrompida na planilha — ignora silenciosamente
+          }
+
+          if (secao === 'dados') dadosMeses[mesChave] = valorParsed;
+          if (secao === 'cartao') despesasCartao[mesChave] = valorParsed;
+          if (secao === 'extrato') extratoConta[mesChave] = valorParsed;
+
+          const atual = ultimaAtualizacaoPorMes[mesChave];
+          if (registro.atualizadoEm && (!atual || registro.atualizadoEm > atual)) {
+            ultimaAtualizacaoPorMes[mesChave] = registro.atualizadoEm;
+          }
+        });
+      } catch (err) {
+        mostrarAvisoBanco('Não foi possível carregar os dados compartilhados da planilha. Verifique a URL configurada e sua conexão. Detalhe: ' + (err && err.message ? err.message : err), true);
+      }
+    }
+
+    // Grava na planilha compartilhada APENAS as seções indicadas do mês
+    // informado ("dados", "cartao" e/ou "extrato") — nunca tudo de uma vez,
+    // pra reduzir o risco de uma gravação sobrescrever uma mudança
+    // concorrente em outra seção do mesmo mês (ex: alguém editando Receita
+    // enquanto outra pessoa importa uma fatura). Dentro da MESMA seção, a
+    // última gravação prevalece (last-writer-wins), como a regra pede.
+    async function persistirMes(mesChave, secoes) {
+      const listaSecoes = secoes || ['dados', 'cartao', 'extrato'];
+      const agora = new Date().toISOString();
+
+      if (!urlApi) {
+        // Sem planilha configurada: mantém em memória só para esta sessão,
+        // mas deixa claro que não foi salvo de verdade
+        ultimaAtualizacaoPorMes[mesChave] = agora;
+        atualizarIndicadorUltimaAtualizacao();
+        mostrarAvisoBanco('Nenhuma planilha compartilhada configurada — os dados só existem nesta sessão e serão perdidos ao fechar a página. Configure a URL do Apps Script no topo do painel.', true);
+        return;
+      }
+
+      for (const secao of listaSecoes) {
+        let valor;
+        if (secao === 'dados') valor = dadosMeses[mesChave] || {};
+        if (secao === 'cartao') valor = despesasCartao[mesChave] || [];
+        if (secao === 'extrato') valor = extratoConta[mesChave] || [];
+
+        const chave = mesChave + ':' + secao;
+        try {
+          // Content-Type text/plain evita o preflight CORS que o Apps
+          // Script não trata bem — o doPost lá do lado de lá continua
+          // lendo o corpo como JSON normalmente
+          const resp = await fetch(urlApi, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ chave, valor })
+          });
+          const resultado = await resp.json();
+          if (!resultado.ok) throw new Error(resultado.erro || 'Falha ao salvar');
+          if (resultado.atualizadoEm) ultimaAtualizacaoPorMes[mesChave] = resultado.atualizadoEm;
+        } catch (err) {
+          mostrarAvisoBanco('Não foi possível salvar "' + secao + '" na planilha compartilhada. Detalhe: ' + (err && err.message ? err.message : err), true);
+          return;
+        }
+      }
+
+      atualizarIndicadorUltimaAtualizacao();
+    }
+
+    function mostrarAvisoBanco(mensagem, erro) {
+      const box = document.getElementById('avisoBanco');
+      if (!box) return;
+      box.style.display = 'block';
+      box.classList.toggle('erro', !!erro);
+      box.textContent = mensagem;
+    }
+
+    // Regra — Atualização e Concorrência: mostra quando os dados deste mês
+    // foram salvos pela última vez (por qualquer pessoa), pra quem abre o
+    // painel saber se está vendo a versão mais recente
+    function atualizarIndicadorUltimaAtualizacao() {
+      const el = document.getElementById('ultimaAtualizacao');
+      if (!el) return;
+      const iso = ultimaAtualizacaoPorMes[mesSelecionado];
+      if (!iso) {
+        el.textContent = '';
+        return;
+      }
+      const data = new Date(iso);
+      const dataFormatada = data.toLocaleDateString('pt-BR');
+      const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      el.textContent = `Última atualização: ${dataFormatada} às ${horaFormatada}`;
+    }
+
+    // Abre/fecha manualmente o painel de configuração da URL da planilha,
+    // pra quem já configurou antes e quer trocar a URL depois
+    function alternarConfiguracaoApi() {
+      const container = document.getElementById('configuracaoApiContainer');
+      const jaAberto = container.style.display === 'block';
+      container.style.display = jaAberto ? 'none' : 'block';
+      if (!jaAberto) {
+        document.getElementById('urlApiInput').value = urlApi;
+      }
+    }
+
+    // Salva a URL do Apps Script digitada pela usuária (fica no navegador
+    // dela — é só o "endereço" da planilha compartilhada, não é dado
+    // compartilhado em si) e recarrega os dados a partir dela
+    async function configurarUrlApi() {
+      const input = document.getElementById('urlApiInput');
+      const novaUrl = (input.value || '').trim();
+      if (!novaUrl) {
+        alert('Cole a URL do Apps Script (termina em /exec)');
+        return;
+      }
+      urlApi = novaUrl;
+      localStorage.setItem(CHAVE_URL_API, urlApi);
+      document.getElementById('avisoBanco').style.display = 'none';
+      await carregarDadosCompartilhados();
+      garantirMesInicializado(mesSelecionado);
+      carregarCamposNaTela();
+      migrarDadosAntigos();
+      recolherBlocosPorPadrao();
+      renderizarCartao();
+      renderizarExtrato();
+      renderizarPensao();
+      atualizarResumo();
+      atualizarIndicadorUltimaAtualizacao();
+      document.getElementById('configuracaoApiContainer').style.display = 'none';
+    }
+
+    // Regra 6 — ao abrir um mês pela primeira vez, Receita e Despesas Fixas
+    // vêm preenchidas automaticamente com os valores do mês anterior, sem
+    // nenhuma ação do analista. Só acontece UMA VEZ por mês: como já
+    // gravamos o resultado no banco compartilhado logo abaixo, em recargas
+    // futuras o mês já existe e nunca mais é sobrescrito, mesmo que o mês
+    // anterior mude depois.
+    function garantirMesInicializado(mesChave) {
+      if (dadosMeses[mesChave]) return;
+
+      const idxMes = MESES_DISPONIVEIS.indexOf(mesChave);
+      const mesAnterior = idxMes > 0 ? MESES_DISPONIVEIS[idxMes - 1] : null;
+
+      if (mesAnterior && dadosMeses[mesAnterior]) {
+        dadosMeses[mesChave] = { ...dadosMeses[mesAnterior] };
+      } else {
+        const vazio = {};
+        [...camposReceita, ...camposFixos, ...camposPensao].forEach(campo => vazio[campo] = 0);
+        dadosMeses[mesChave] = vazio;
+      }
+      persistirMes(mesChave, ['dados']);
+    }
+
+    // Reflete os valores em memória de Receita/Despesas Fixas/Pensão do mês
+    // selecionado nos campos da tela
+    function carregarCamposNaTela() {
+      [...camposReceita, ...camposFixos, ...camposPensao].forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = (dadosMeses[mesSelecionado] || {})[campo] || 0;
+      });
+    }
+
+    // Inicialização
+    // Regra 2 (Persistência do Mês em Visualização) — chave usada no
+    // localStorage DESTE navegador (preferência de navegação, individual
+    // por usuário/máquina — não é dado compartilhado)
+    const CHAVE_MES_VISUALIZADO = 'painelDespesasMesVisualizado';
+
+    // Entre os meses que já têm algum dado salvo (em qualquer uma das três
+    // bases), retorna o mais recente — usado como fallback quando não há
+    // preferência de mês salva neste navegador, ou quando o mês salvo não
+    // existe mais na base compartilhada
+    function mesMaisRecenteComDados() {
+      const chaves = new Set([
+        ...Object.keys(dadosMeses),
+        ...Object.keys(despesasCartao),
+        ...Object.keys(extratoConta)
+      ]);
+      if (chaves.size === 0) return MESES_DISPONIVEIS[0];
+      return [...chaves].sort().pop();
+    }
+
+    // Regra 2.1/2.2 — decide qual mês abrir: o último visualizado por ESTE
+    // navegador, se ainda existir na base; caso contrário, o mês mais
+    // recente com dados (primeiro acesso, ou mês salvo que não existe mais)
+    function determinarMesInicial() {
+      const salvo = localStorage.getItem(CHAVE_MES_VISUALIZADO);
+      if (salvo && MESES_DISPONIVEIS.includes(salvo)) {
+        return salvo;
+      }
+      return mesMaisRecenteComDados();
+    }
+
+    async function init() {
+      const inputUrl = document.getElementById('urlApiInput');
+      if (inputUrl) inputUrl.value = urlApi;
+
+      if (!urlApi) {
+        document.getElementById('configuracaoApiContainer').style.display = 'block';
+        mostrarAvisoBanco('Configure a URL da planilha compartilhada (Google Apps Script) acima para carregar e salvar os dados. Enquanto isso, o painel funciona só nesta sessão, sem salvar nada.', true);
+      } else {
+        await carregarDadosCompartilhados();
+      }
+
+      // Regra 2 — reabre no último mês visualizado por este navegador (não
+      // é dado compartilhado, é preferência local de navegação)
+      mesSelecionado = determinarMesInicial();
+      popularSeletorMeses();
+
+      garantirMesInicializado(mesSelecionado);
+      carregarCamposNaTela();
+      migrarDadosAntigos();
+      recolherBlocosPorPadrao();
+      renderizarCartao();
+      renderizarExtrato();
+      renderizarPensao();
+      atualizarResumo();
+      atualizarDestaqueMes();
+      atualizarIndicadorUltimaAtualizacao();
+      
+      document.getElementById('mesSelecionado').addEventListener('change', (e) => {
+        mesSelecionado = e.target.value;
+        localStorage.setItem(CHAVE_MES_VISUALIZADO, mesSelecionado);
+        garantirMesInicializado(mesSelecionado);
+        carregarCamposNaTela();
+        recolherBlocosPorPadrao();
+        renderizarCartao();
+        renderizarExtrato();
+        renderizarPensao();
+        atualizarResumo();
+        atualizarDestaqueMes();
+        atualizarIndicadorUltimaAtualizacao();
+      });
+
+      document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', () => {
+          salvarDados();
+          atualizarResumo();
+        });
+      });
+
+      if (typeof XLSX === 'undefined') {
+        mostrarStatus('Biblioteca de leitura de Excel não carregou. Verifique sua conexão e recarregue a página. Arquivos .csv continuam funcionando normalmente.', true);
+      }
+
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.13.216/build/pdf.worker.js';
+      } else {
+        mostrarStatusExtrato('Biblioteca de leitura de PDF não carregou. Verifique sua conexão e recarregue a página. Arquivos .csv/.xls continuam funcionando normalmente para o extrato.', true);
+      }
+    }
+
+    function popularSeletorMeses() {
+      const select = document.getElementById('mesSelecionado');
+      select.innerHTML = MESES_DISPONIVEIS.map(m =>
+        `<option value="${m}">${nomeMesLegivel(m)}</option>`
+      ).join('');
+      select.value = mesSelecionado;
+    }
+
+    // Migra dados salvos no formato antigo (campo "tipo") para o novo modelo
+    // onde "Terceiro" é apenas mais uma opção da própria Categoria, e remove
+    // entradas que na verdade são rótulos do cabeçalho da fatura (Nome/Agência/
+    // Conta) importadas por engano em versões anteriores do painel, antes da
+    // correção do parser — sem isso, esses itens ficariam presos no navegador
+    // mesmo depois da correção, já que reimportar a mesma fatura não os remove.
+    function migrarDadosAntigos() {
+      const mesesAlterados = new Set();
+      Object.keys(despesasCartao).forEach(mes => {
+        const itensOriginais = despesasCartao[mes] || [];
+        const itensFiltrados = itensOriginais.filter(item => !descricaoEhRotuloMetadado(item.descricao));
+        if (itensFiltrados.length !== itensOriginais.length) {
+          despesasCartao[mes] = itensFiltrados;
+          mesesAlterados.add(mes);
+        }
+
+        (despesasCartao[mes] || []).forEach(item => {
+          if (item.tipo === 'Terceiro' && item.categoria !== 'Terceiro') {
+            item.categoria = 'Terceiro';
+            item.categoriaManual = true;
+            mesesAlterados.add(mes);
+          }
+          if ('tipo' in item) {
+            delete item.tipo;
+            mesesAlterados.add(mes);
+          }
+          // Preenche retroativamente o número do cartão (para ordenação) e
+          // o nome da pessoa no rótulo, para itens importados antes dessa
+          // funcionalidade existir
+          if (item.cartao && !item.numeroCartao) {
+            const m = item.cartao.match(/(\d{4})/);
+            if (m) {
+              item.numeroCartao = m[1];
+              const nome = NOMES_POR_CARTAO[m[1]];
+              if (nome && !item.cartao.includes(' - ')) {
+                item.cartao = `Cartão final ${m[1]} - ${nome}`;
+              }
+              mesesAlterados.add(mes);
+            }
+          }
+
+          // Regra 7 — correções automáticas de categoria (de-para por
+          // descrição) NUNCA sobrescrevem uma categoria escolhida
+          // manualmente pela usuária no dropdown.
+          if (item.categoriaManual) return;
+
+          // "Transporte" foi substituída por "Uber" — como só continha
+          // corridas (uber/99), a migração é direta, sem perda de sentido
+          if (item.categoria === 'Transporte') {
+            item.categoria = 'Uber';
+            mesesAlterados.add(mes);
+          }
+          // Qualquer lançamento com "Ifd" na descrição é Ifood — corrige
+          // retroativamente itens que ficaram presos em uma categoria antiga
+          // (de antes de "Ifood" existir) via reconhecimento entre meses.
+          if (item.descricao && categoriaContaNoCalculo(item.categoria) &&
+              item.categoria !== 'Ifood' && normalizarDescricao(item.descricao).includes('ifd')) {
+            item.categoria = 'Ifood';
+            mesesAlterados.add(mes);
+          }
+          // "RD Saude" é farmácia — mesma lógica de correção retroativa
+          if (item.descricao && item.categoria !== 'Farmácia' &&
+              normalizarDescricao(item.descricao).includes('rd saude')) {
+            item.categoria = 'Farmácia';
+            mesesAlterados.add(mes);
+          }
+        });
+      });
+      mesesAlterados.forEach(mes => persistirMes(mes, ['cartao']));
+    }
+
+    function formatCurrency(value) {
+      return 'R$ ' + parseFloat(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+
+    function mostrarStatus(mensagem, erro) {
+      const statusBox = document.getElementById('csvStatus');
+      const statusText = document.getElementById('csvStatusText');
+      statusBox.style.display = 'block';
+      statusBox.classList.toggle('erro', !!erro);
+      statusText.textContent = mensagem;
+    }
+
+    // Lê os valores atuais dos campos de Receita/Fixas na tela e salva —
+    // usar depois de o usuário editar um campo manualmente. IMPORTANTE: não
+    // usar logo após alterar dadosMeses[mesSelecionado] programaticamente
+    // sem antes atualizar o DOM, ou esta função vai ler os campos antigos e
+    // desfazer a mudança — nesses casos, chame persistirMes() diretamente.
+    function salvarDados() {
+      const dados = {};
+      [...camposReceita, ...camposFixos, ...camposPensao].forEach(campo => {
+        const el = document.getElementById(campo);
+        dados[campo] = el ? (parseFloat(el.value) || 0) : 0;
+      });
+      dadosMeses[mesSelecionado] = dados;
+      persistirMes(mesSelecionado, ['dados']);
+    }
+
+    // Normaliza a descrição para permitir reconhecimento entre meses e
+    // categorização por palavra-chave, removendo indicadores de parcela
+    // como "01/12" que mudam mês a mês
+    function normalizarDescricao(desc) {
+      return (desc || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\d{1,2}\s*\/\s*\d{1,2}/g, '')
+        .replace(/parc(ela)?\.?\s*\d+/g, '')
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Sugere uma categoria com base em palavras-chave conhecidas na descrição
+    function categorizarAutomaticamente(descricao) {
+      const desc = normalizarDescricao(descricao);
+      for (const regra of regrasCategorizacao) {
+        if (regra.padroes.some(padrao => desc.includes(padrao))) {
+          return regra.categoria;
+        }
+      }
+      return 'Outros';
+    }
+
+    // Verifica se o lançamento deve ser desconsiderado da fatura.
+    // "Pagamento Com Saldo" é um pagamento, não uma despesa.
+    function deveIgnorarLancamento(descricao) {
+      const desc = normalizarDescricao(descricao);
+      return desc.includes('pagamento com saldo');
+    }
+
+    // Rótulos de identificação que aparecem no topo da fatura do Itaú
+    // (nome do titular, agência, conta, dados do cartão) — nunca são
+    // lançamentos de despesa. Esta checagem varre a linha INTEIRA, célula
+    // por célula, em vez de depender de qual coluna foi mapeada como
+    // "descrição" — assim continua funcionando mesmo se a detecção do
+    // cabeçalho "Lançamento" falhar para um layout de planilha diferente.
+    const ROTULOS_METADADO_FATURA = [
+      'nome', 'agencia', 'conta', 'cartao', 'vencimento', 'titularidade',
+      'tipo do cartao', 'numero do cartao', 'valor parcial', 'fatura aberta',
+      'lancamentos', 'importante saber', 'subtotal'
+    ];
+
+    function descricaoEhRotuloMetadado(descricao) {
+      return ROTULOS_METADADO_FATURA.includes(normalizarDescricao(descricao || ''));
+    }
+
+    function linhaEhMetadadoDaFatura(linha) {
+      if (!linha) return false;
+      for (const celula of linha) {
+        const texto = (celula || '').toString().trim();
+        if (!texto) continue;
+        // só avalia a primeira célula não vazia da linha (posição do rótulo)
+        return descricaoEhRotuloMetadado(texto);
+      }
+      return false;
+    }
+
+    // Busca em todos os meses já importados se essa descrição já foi
+    // classificada anteriormente, priorizando o mês mais recente —
+    // assim uma parcela marcada como Terceiro (ou qualquer outra categoria
+    // corrigida manualmente) continua sendo reconhecida nos meses seguintes
+    function buscarClassificacaoAnterior(descricao) {
+      const chave = normalizarDescricao(descricao);
+      if (!chave) return null;
+
+      const meses = Object.keys(despesasCartao).sort().reverse();
+
+      for (const mes of meses) {
+        const itens = despesasCartao[mes] || [];
+        const match = itens.find(item => normalizarDescricao(item.descricao) === chave);
+        if (match) {
+          return { categoria: match.categoria };
+        }
+      }
+      return null;
+    }
+
+    // Converte valores monetários em formato BR (1.234,56) ou padrão (1234.56) para número
+    function parseValorMonetario(valor) {
+      if (typeof valor === 'number') return valor;
+      if (valor === null || valor === undefined) return NaN;
+
+      let s = String(valor).trim().replace('R$', '').trim();
+      if (s === '') return NaN;
+
+      if (/,\d{1,2}$/.test(s)) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else {
+        s = s.replace(/,/g, '');
+      }
+      return parseFloat(s);
+    }
+
+    // Extrai o número da parcela e o total a partir do texto da coluna
+    // "Parcelamento" do Itaú (ex: "Parcela 3 de 12" -> "3/12"). Retorna
+    // string vazia quando a compra não é parcelada ou o texto não bate o padrão.
+    function formatarParcela(textoParcelamento) {
+      if (!textoParcelamento) return '';
+      const texto = textoParcelamento.toString();
+      const match = texto.match(/(\d+)\s*(?:de|\/)\s*(\d+)/i);
+      return match ? `${match[1]}/${match[2]}` : '';
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // BLOCO C — Projeção de parcelas futuras (Regras 8 a 11)
+    // ────────────────────────────────────────────────────────────
+
+    // Extrai {atual, total} de uma string "N/M" (ex: "3/12" -> {atual:3, total:12})
+    function parseParcela(parcelaStr) {
+      const m = (parcelaStr || '').match(/^(\d+)\/(\d+)$/);
+      if (!m) return null;
+      const atual = parseInt(m[1], 10);
+      const total = parseInt(m[2], 10);
+      if (!atual || !total || atual > total) return null;
+      return { atual, total };
+    }
+
+    // Regra — Destaque Visual de Lançamentos: decide a classe CSS de cor de
+    // uma linha, com prioridade quando mais de um critério bate — a cor da
+    // categoria (Terceiro/Reembolso) sempre prevalece sobre a de última
+    // parcela, por ser a informação que afeta o cálculo (Regra 4). Nenhuma
+    // dessas classes altera subtotal, total ou gráfico — são só visuais.
+    function classeDestaqueLinha(item) {
+      if (item.categoria === 'Terceiro') return 'linha-terceiro';
+      if (item.categoria === 'Reembolso') return 'linha-reembolso';
+      if (!categoriaContaNoCalculo(item.categoria)) return 'categoria-terceiro';
+      const p = parseParcela(item.parcela);
+      if (p && p.atual === p.total) return 'linha-ultima-parcela';
+      return '';
+    }
+
+    // Chave usada para casar uma parcela projetada com um lançamento real
+    // (mesma descrição normalizada + mesmo cartão de origem)
+    function chaveParcelaOrigem(descricao, cartao) {
+      return normalizarDescricao(descricao) + '|' + (cartao || '');
+    }
+
+    // Varre TODOS os lançamentos reais (não projetados) de TODOS os meses já
+    // importados e, para cada um que tiver parcela pendente (ex: "3/12"),
+    // projeta as parcelas restantes (4/12 a 12/12) nos meses futuros
+    // correspondentes. Cada projeção herda cartão, descrição, valor da
+    // parcela e categoria do lançamento de origem (Regra 8).
+    function calcularProjecoes() {
+      const porMes = {};
+      Object.keys(despesasCartao).forEach(mesOrigem => {
+        (despesasCartao[mesOrigem] || []).forEach(item => {
+          if (item.projetado) return; // nunca projeta a partir de uma projeção
+          const p = parseParcela(item.parcela);
+          if (!p || p.atual >= p.total) return;
+
+          for (let n = p.atual + 1; n <= p.total; n++) {
+            const mesAlvo = somarMeses(mesOrigem, n - p.atual);
+            if (!mesAlvo) continue; // além do intervalo de meses suportado
+            if (!porMes[mesAlvo]) porMes[mesAlvo] = [];
+            porMes[mesAlvo].push({
+              data: '',
+              descricao: item.descricao,
+              valor: item.valor,
+              parcela: `${n}/${p.total}`,
+              categoria: item.categoria,
+              cartao: item.cartao,
+              fatura: '',
+              numeroCartao: item.numeroCartao,
+              autoClassificado: false,
+              projetado: true,
+              chaveOrigem: chaveParcelaOrigem(item.descricao, item.cartao)
+            });
+          }
+        });
+      });
+      return porMes;
+    }
+
+    // Retorna os itens de cartão a EXIBIR/CALCULAR para um mês: os reais
+    // (importados) mais as projeções que ainda não foram substituídas por
+    // um lançamento real equivalente (Regra 9 e 10). Se já existe fatura
+    // importada daquele cartão neste mês mas a parcela esperada não
+    // apareceu nela, a projeção é sinalizada como divergente.
+    function obterItensComProjecoes(mes) {
+      const reais = despesasCartao[mes] || [];
+      const projecoesDoMes = calcularProjecoes()[mes] || [];
+      const chavesReais = new Set(reais.map(i => chaveParcelaOrigem(i.descricao, i.cartao)));
+
+      const projecoesValidas = projecoesDoMes
+        .filter(p => !chavesReais.has(p.chaveOrigem))
+        .map(p => {
+          const temFaturaDoCartaoImportada = reais.some(r => r.cartao === p.cartao);
+          return { ...p, divergente: temFaturaDoCartaoImportada };
+        });
+
+      return [...reais, ...projecoesValidas];
+    }
+
+    // Regra 11 — total consolidado de todas as parcelas futuras ainda
+    // pendentes (em todos os meses à frente), com a abertura por mês
+    function calcularTotalParcelasFuturas() {
+      const todasProjecoes = calcularProjecoes();
+      const porMes = {};
+      let totalGeral = 0;
+
+      Object.keys(todasProjecoes).forEach(mes => {
+        const validos = obterItensComProjecoes(mes)
+          .filter(i => i.projetado && categoriaContaNoCalculo(i.categoria));
+        const soma = validos.reduce((s, i) => s + i.valor, 0);
+        if (soma > 0) {
+          porMes[mes] = soma;
+          totalGeral += soma;
+        }
+      });
+
+      return { totalGeral, porMes };
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // BLOCO B — Extrato da Conta Corrente (Regras 7 a 9)
+    // ────────────────────────────────────────────────────────────
+    const extratoConta = {}; // { mesChave: [ {data, descricao, valor, tipoOperacao, categoria, origem, categoriaManual, autoClassificado} ] }
+
+    // Infere o tipo de operação a partir da descrição, quando a planilha do
+    // extrato não trouxer uma coluna própria de tipo (Regra 7). O Itaú usa
+    // o prefixo "DA " para débito automático (ex: "DA Claro Celular").
+    function detectarTipoOperacao(descricao) {
+      const d = normalizarDescricao(descricao);
+      if (/pix/.test(d)) return 'PIX';
+      if (/\bted\b/.test(d)) return 'TED';
+      if (/^da |debito automatico|db automatico|deb automatico/.test(d)) return 'Débito Automático';
+      if (/boleto/.test(d)) return 'Boleto';
+      if (/compra.*debito|cartao de debito|compra com cartao|compra debito/.test(d)) return 'Compra Débito';
+      if (/juros|iof|tarifa/.test(d)) return 'Tarifa/Juros';
+      return 'Outro';
+    }
+
+    // Verifica se a linha é apenas o resumo de saldo diário do extrato
+    // ("Saldo Do Dia"), que não é um lançamento e deve ser descartada.
+    function deveIgnorarLancamentoExtrato(descricao) {
+      const d = normalizarDescricao(descricao);
+      return d.includes('saldo do dia');
+    }
+
+    // Regra 9 — identifica pagamento de fatura de cartão dentro do extrato,
+    // para excluir do Total de Despesas (a despesa já foi contada na fatura).
+    // O Itaú identifica isso no extrato como "Fatura Paga Itau Uniclas".
+    const PADROES_PAGAMENTO_FATURA = [
+      'pagamento cartao', 'pagto cartao', 'pagamento de fatura', 'pgto fatura',
+      'pagamento fatura', 'pag fatura', 'pagto fatura cartao', 'pagamento cartao credito',
+      'fatura paga'
+    ];
+
+    function ehPagamentoDeFatura(descricao) {
+      const d = normalizarDescricao(descricao);
+      return PADROES_PAGAMENTO_FATURA.some(p => d.includes(p));
+    }
+
+    // Reconhecimento entre meses, específico do extrato (mesma lógica do
+    // cartão, mas em sua própria base de dados)
+    function buscarClassificacaoAnteriorExtrato(descricao) {
+      const chave = normalizarDescricao(descricao);
+      if (!chave) return null;
+      const meses = Object.keys(extratoConta).sort().reverse();
+      for (const mes of meses) {
+        const itens = extratoConta[mes] || [];
+        const match = itens.find(item => normalizarDescricao(item.descricao) === chave);
+        if (match) return { categoria: match.categoria };
+      }
+      return null;
+    }
+
+    // Processa UM lançamento de débito já parseado (venha de planilha ou de
+    // PDF) e o adiciona a extratoConta, aplicando as regras de exclusão de
+    // crédito, saldo do dia, pagamento de fatura e categorização. Retorna
+    // true se um novo item foi adicionado.
+    function processarItemExtrato(data, descricao, valorBruto, tipoOperacaoExplicito, infoArquivo, contadores) {
+      if (!descricao || isNaN(valorBruto)) {
+        contadores.ignoradosInvalidos++;
+        return;
+      }
+      if (deveIgnorarLancamentoExtrato(descricao)) {
+        contadores.ignoradosSaldo = (contadores.ignoradosSaldo || 0) + 1;
+        return;
+      }
+      // Regra 7: só débitos (saídas) — convenção: valor negativo = saída
+      if (valorBruto >= 0) {
+        contadores.ignoradosCredito++;
+        return;
+      }
+      const valor = Math.abs(valorBruto);
+      const tipoOperacao = tipoOperacaoExplicito || detectarTipoOperacao(descricao);
+
+      const itemExistente = extratoConta[mesSelecionado].find(
+        item => item.data === data && item.valor === valor && item.descricao === descricao
+      );
+      if (itemExistente) return;
+
+      let categoriaFinal;
+      let autoClassificado = false;
+      if (ehPagamentoDeFatura(descricao)) {
+        categoriaFinal = 'Pagamento de Fatura';
+      } else {
+        const classificacaoAnterior = buscarClassificacaoAnteriorExtrato(descricao);
+        categoriaFinal = classificacaoAnterior ? classificacaoAnterior.categoria : categorizarAutomaticamente(descricao);
+        autoClassificado = !!classificacaoAnterior;
+        if (autoClassificado) contadores.autoClassificados++;
+      }
+
+      extratoConta[mesSelecionado].push({
+        data,
+        descricao,
+        valor,
+        tipoOperacao,
+        categoria: categoriaFinal,
+        origem: (infoArquivo && infoArquivo.origem) || 'Conta Corrente',
+        fatura: (infoArquivo && infoArquivo.fatura) || '',
+        autoClassificado
+      });
+      contadores.itemCount++;
+    }
+
+    // Detecta as colunas do extrato — aceita "Favorecido" além dos
+    // sinônimos de descrição já usados na fatura de cartão, e opcionalmente
+    // uma coluna de Tipo de operação
+    function detectarColunasExtrato(linhaCabecalho) {
+      const normalizar = v => (v || '').toString().toLowerCase().trim();
+      let idxData = -1, idxDescricao = -1, idxValor = -1, idxTipo = -1;
+
+      linhaCabecalho.forEach((col, idx) => {
+        const c = normalizar(col);
+        if (idxData === -1 && /data/.test(c)) idxData = idx;
+        if (idxDescricao === -1 && /(lan[cç]amento|descri[cç][aã]o|estabelecimento|hist[oó]rico|favorecido)/.test(c)) idxDescricao = idx;
+        if (idxValor === -1 && /valor/.test(c)) idxValor = idx;
+        if (idxTipo === -1 && /^tipo/.test(c)) idxTipo = idx;
+      });
+
+      return { idxData, idxDescricao, idxValor, idxTipo };
+    }
+
+    // ── Leitura de PDF (extrato do Itaú) ──
+    // Reconstrói as linhas de texto do PDF agrupando os fragmentos por
+    // coordenada vertical (mesma linha) e ordenando por coordenada
+    // horizontal (ordem de leitura), depois interpreta cada linha no
+    // formato "DD/MM/AAAA Descrição Valor" que o extrato do Itaú usa.
+    async function extrairTextoPDF(arrayBuffer) {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let linhasTotais = [];
+
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+
+        const linhasPorY = {};
+        content.items.forEach(item => {
+          const y = Math.round(item.transform[5]);
+          if (!linhasPorY[y]) linhasPorY[y] = [];
+          linhasPorY[y].push(item);
+        });
+
+        const ysOrdenados = Object.keys(linhasPorY).map(Number).sort((a, b) => b - a);
+        ysOrdenados.forEach(y => {
+          const itensDaLinha = linhasPorY[y].sort((a, b) => a.transform[4] - b.transform[4]);
+          const textoLinha = itensDaLinha.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
+          if (textoLinha) linhasTotais.push(textoLinha);
+        });
+      }
+
+      return linhasTotais;
+    }
+
+    // Interpreta uma linha de texto do extrato em PDF no formato
+    // "DD/MM/AAAA Descrição Valor" (ex: "08/09/2026 DA Claro Celular -80,90").
+    // Regra 3: uma linha que começa com data (indício forte de lançamento)
+    // mas cujo valor não pode ser extraído com segurança não é descartada —
+    // volta marcada para revisão manual, com o restante do texto preservado.
+    function parsearLinhaExtratoPDF(linha) {
+      const matchData = linha.match(/^(\d{2}\/\d{2}\/\d{4})\s+(.+)$/);
+      if (!matchData) return null; // não começa com data: ruído estrutural (cabeçalho/rodapé/página)
+
+      const data = matchData[1];
+      const resto = matchData[2].trim();
+
+      const matchValor = resto.match(/^(.+?)\s+(-?[\d.]+,\d{2})$/);
+      if (!matchValor) {
+        return { data, descricao: resto, valorTexto: null, precisaRevisao: true };
+      }
+
+      return { data, descricao: matchValor[1].trim(), valorTexto: matchValor[2], precisaRevisao: false };
+    }
+
+    // Processa o extrato em PDF: cada linha reconstruída é interpretada e,
+    // se corresponder ao padrão de lançamento, processada como um débito.
+    // Linhas sinalizadas para revisão (Regra 3) são mantidas visíveis, nunca
+    // descartadas silenciosamente.
+    function processarTextoExtratoPDF(linhasTexto, infoArquivo) {
+      const contadores = { itemCount: 0, autoClassificados: 0, ignoradosInvalidos: 0, ignoradosCredito: 0, ignoradosSaldo: 0, sinalizadosRevisao: 0 };
+      if (!extratoConta[mesSelecionado]) extratoConta[mesSelecionado] = [];
+
+      linhasTexto.forEach(linha => {
+        const parsed = parsearLinhaExtratoPDF(linha);
+        if (!parsed) {
+          contadores.ignoradosInvalidos++;
+          return;
+        }
+
+        if (parsed.precisaRevisao) {
+          if (deveIgnorarLancamentoExtrato(parsed.descricao)) return; // ex: "Saldo Do Dia" sem valor capturável
+          const jaExiste = extratoConta[mesSelecionado].find(
+            item => item.precisaRevisao && item.data === parsed.data && item.descricao === parsed.descricao
+          );
+          if (jaExiste) return;
+          extratoConta[mesSelecionado].push({
+            data: parsed.data,
+            descricao: parsed.descricao,
+            valor: 0,
+            tipoOperacao: 'A verificar',
+            categoria: 'Outros',
+            origem: (infoArquivo && infoArquivo.origem) || 'Conta Corrente',
+            fatura: (infoArquivo && infoArquivo.fatura) || '',
+            autoClassificado: false,
+            precisaRevisao: true
+          });
+          contadores.sinalizadosRevisao++;
+          return;
+        }
+
+        const valorBruto = parseValorMonetario(parsed.valorTexto);
+        processarItemExtrato(parsed.data, parsed.descricao, valorBruto, null, infoArquivo, contadores);
+      });
+
+      return contadores;
+    }
+
+    // Extrai um rótulo de origem a partir do nome do arquivo do extrato
+    // (ex: "extrato-conta-corrente-setembro2026.xlsx" -> tenta achar o mês)
+    function extrairInfoArquivoExtrato(nomeArquivoOriginal) {
+      const nomeArquivo = nomeArquivoOriginal.toLowerCase();
+      let fatura = '';
+      for (const mes of MESES_PT) {
+        const m = nomeArquivo.match(new RegExp(mes + '\\s*(\\d{4})'));
+        if (m) {
+          fatura = `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${m[1]}`;
+          break;
+        }
+      }
+      return { origem: 'Conta Corrente', fatura };
+    }
+
+    // Processa as linhas do extrato bancário. Diferente da fatura de
+    // cartão: só entram lançamentos de DÉBITO (Regra 7) — a convenção
+    // adotada é valor negativo = saída da conta, positivo = entrada
+    // (crédito), que é o padrão mais comum em exportações bancárias.
+    function processarLinhasExtrato(rows, infoArquivo) {
+      const contadores = { itemCount: 0, autoClassificados: 0, ignoradosInvalidos: 0, ignoradosCredito: 0, ignoradosSaldo: 0 };
+      if (!rows || rows.length === 0) return contadores;
+      if (!extratoConta[mesSelecionado]) extratoConta[mesSelecionado] = [];
+
+      let idxData = 0, idxDescricao = 1, idxValor = 2, idxTipo = -1;
+      let startRow = 0;
+      let headerIdx = -1;
+
+      for (let i = 0; i < rows.length; i++) {
+        const d = detectarColunasExtrato(rows[i] || []);
+        if (d.idxData !== -1 && d.idxDescricao !== -1) { headerIdx = i; break; }
+      }
+
+      if (headerIdx !== -1) {
+        const d = detectarColunasExtrato(rows[headerIdx]);
+        idxData = d.idxData;
+        idxDescricao = d.idxDescricao;
+        idxValor = d.idxValor !== -1 ? d.idxValor : idxValor;
+        idxTipo = d.idxTipo;
+        startRow = headerIdx + 1;
+      }
+
+      for (let i = startRow; i < rows.length; i++) {
+        const linha = rows[i];
+        if (!linha || linha.length === 0) continue;
+
+        const data = (linha[idxData] || '').toString().trim();
+        const descricao = (linha[idxDescricao] || '').toString().trim();
+        const valorBruto = parseValorMonetario(linha[idxValor]);
+        const tipoExplicito = (idxTipo !== -1 && linha[idxTipo]) ? linha[idxTipo].toString().trim() : null;
+
+        processarItemExtrato(data, descricao, valorBruto, tipoExplicito, infoArquivo, contadores);
+      }
+
+      return contadores;
+    }
+
+    // Importa um ou mais arquivos de extrato bancário — planilha (.csv/.xls/
+    // .xlsx) ou PDF (o formato mais comum de extrato de conta corrente)
+    // Converte "DD/MM/AAAA" em timestamp, para comparar períodos (Regra 5)
+    function parseDataBR(dataStr) {
+      const m = (dataStr || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return null;
+      return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10)).getTime();
+    }
+
+    async function importarArquivoExtrato() {
+      const fileInput = document.getElementById('arquivoExtratoUpload');
+      const arquivos = Array.from(fileInput.files || []);
+
+      if (arquivos.length === 0) {
+        alert('Selecione um ou mais arquivos (.csv, .xls, .xlsx ou .pdf)');
+        return;
+      }
+
+      // Regra 5 — guarda quais itens já existiam antes desta importação,
+      // para depois checar se o período recém-importado se sobrepõe a eles
+      const itensAntes = extratoConta[mesSelecionado] ? [...extratoConta[mesSelecionado]] : [];
+      const datasAntes = itensAntes.map(i => parseDataBR(i.data)).filter(d => d !== null);
+      const minAntes = datasAntes.length ? Math.min(...datasAntes) : null;
+      const maxAntes = datasAntes.length ? Math.max(...datasAntes) : null;
+
+      const resumoTotal = { itemCount: 0, autoClassificados: 0, ignoradosInvalidos: 0, ignoradosCredito: 0, ignoradosSaldo: 0, sinalizadosRevisao: 0 };
+      const arquivosComErro = [];
+
+      for (const arquivo of arquivos) {
+        try {
+          const nomeArquivo = arquivo.name.toLowerCase();
+          const infoArquivo = extrairInfoArquivoExtrato(arquivo.name);
+          let resumo;
+
+          if (nomeArquivo.endsWith('.pdf')) {
+            if (typeof pdfjsLib === 'undefined') {
+              throw new Error('Biblioteca de leitura de PDF não carregou');
+            }
+            const arrayBuffer = await arquivo.arrayBuffer();
+            const linhasTexto = await extrairTextoPDF(arrayBuffer);
+            resumo = processarTextoExtratoPDF(linhasTexto, infoArquivo);
+          } else {
+            const linhas = await lerArquivoComoLinhas(arquivo);
+            resumo = processarLinhasExtrato(linhas, infoArquivo);
+          }
+
+          resumoTotal.itemCount += resumo.itemCount;
+          resumoTotal.autoClassificados += resumo.autoClassificados;
+          resumoTotal.ignoradosInvalidos += resumo.ignoradosInvalidos;
+          resumoTotal.ignoradosCredito += resumo.ignoradosCredito;
+          resumoTotal.ignoradosSaldo += (resumo.ignoradosSaldo || 0);
+          resumoTotal.sinalizadosRevisao += (resumo.sinalizadosRevisao || 0);
+        } catch (err) {
+          arquivosComErro.push(arquivo.name);
+        }
+      }
+
+      persistirMes(mesSelecionado, ['extrato']);
+      renderizarExtrato();
+      atualizarResumo();
+
+      const prefixoArquivos = arquivos.length > 1 ? ` de ${arquivos.length} arquivos` : '';
+      let msg = `${resumoTotal.itemCount} lançamento(s) de débito carregado(s)${prefixoArquivos}`;
+      if (resumoTotal.autoClassificados > 0) {
+        msg += ` (${resumoTotal.autoClassificados} reconhecido(s) de meses anteriores)`;
+      }
+      if (resumoTotal.sinalizadosRevisao > 0) {
+        msg += `. ${resumoTotal.sinalizadosRevisao} linha(s) com valor não identificado com segurança — mantida(s) visível(is) para conferência (⚠ verificar)`;
+      }
+      if (resumoTotal.ignoradosCredito > 0) {
+        msg += `. ${resumoTotal.ignoradosCredito} lançamento(s) de crédito (entrada) ignorado(s)`;
+      }
+      if (resumoTotal.ignoradosSaldo > 0) {
+        msg += `. ${resumoTotal.ignoradosSaldo} linha(s) de "Saldo Do Dia" desconsiderada(s)`;
+      }
+      if (resumoTotal.ignoradosInvalidos > 0) {
+        msg += `. ${resumoTotal.ignoradosInvalidos} linha(s) ignorada(s) por falta de descrição ou valor válido`;
+      }
+      if (arquivosComErro.length > 0) {
+        msg += `. Não foi possível ler: ${arquivosComErro.join(', ')}`;
+      }
+
+      // Regra 5 — sinaliza sobreposição de período com o que já existia
+      // antes desta importação neste mês
+      if (minAntes !== null) {
+        const itensAgora = extratoConta[mesSelecionado] || [];
+        const itensNovos = itensAgora.filter(i => !itensAntes.includes(i));
+        const datasNovas = itensNovos.map(i => parseDataBR(i.data)).filter(d => d !== null);
+        if (datasNovas.length > 0) {
+          const minNovo = Math.min(...datasNovas);
+          const maxNovo = Math.max(...datasNovas);
+          if (minNovo <= maxAntes && maxNovo >= minAntes) {
+            msg += '. ⚠ Atenção: o período deste arquivo se sobrepõe a lançamentos já importados neste mês — verifique possíveis duplicidades entre os arquivos';
+          }
+        }
+      }
+
+      mostrarStatusExtrato(msg, arquivosComErro.length > 0 && resumoTotal.itemCount === 0);
+    }
+
+    function mostrarStatusExtrato(mensagem, erro) {
+      const statusBox = document.getElementById('extratoStatus');
+      const statusText = document.getElementById('extratoStatusText');
+      if (!statusBox || !statusText) return;
+      statusBox.style.display = 'block';
+      statusBox.classList.toggle('erro', !!erro);
+      statusText.textContent = mensagem;
+    }
+
+    function atualizarItemExtrato(index, campo, valor) {
+      if (extratoConta[mesSelecionado] && extratoConta[mesSelecionado][index]) {
+        extratoConta[mesSelecionado][index][campo] = valor;
+        extratoConta[mesSelecionado][index].autoClassificado = false;
+        if (campo === 'categoria') {
+          extratoConta[mesSelecionado][index].categoriaManual = true;
+        }
+        persistirMes(mesSelecionado, ['extrato']);
+        renderizarExtrato();
+        atualizarResumo();
+      }
+    }
+
+    // Exclusão individual — disponível SOMENTE para lançamentos do extrato
+    // (nunca para itens de fatura de cartão, onde o caminho continua sendo
+    // categorizar como Terceiro/Pensão). Reversível a qualquer momento e
+    // persistida: se o mesmo lançamento voltar numa reimportação, o registro
+    // já existente (com excluido:true) é encontrado pela checagem de
+    // duplicidade e nada novo é criado — ele permanece excluído.
+    function excluirItemExtrato(index) {
+      if (extratoConta[mesSelecionado] && extratoConta[mesSelecionado][index]) {
+        extratoConta[mesSelecionado][index].excluido = true;
+        persistirMes(mesSelecionado, ['extrato']);
+        renderizarExtrato();
+        atualizarResumo();
+      }
+    }
+
+    function restaurarItemExtrato(index) {
+      if (extratoConta[mesSelecionado] && extratoConta[mesSelecionado][index]) {
+        extratoConta[mesSelecionado][index].excluido = false;
+        persistirMes(mesSelecionado, ['extrato']);
+        renderizarExtrato();
+        atualizarResumo();
+      }
+    }
+
+    // Regra 1 (Bloco de Pensão) — mesmo padrão visual/recolhível dos blocos
+    // de cartão e extrato. Nada aqui compõe o Total de Despesas: os
+    // lançamentos categorizados como Pensão já ficam fora do cálculo desde
+    // a Regra de exclusão de categorias; este bloco só consolida e compara
+    // o valor devido com o efetivamente pago, para conferência.
+    //
+    // A estrutura (cabeçalho, campo de input, os 3 cards) é criada UMA
+    // ÚNICA VEZ; chamadas seguintes só atualizam os valores exibidos, sem
+    // recriar o campo de input — recriar a cada tecla digitada faria o
+    // cursor perder o foco no meio da digitação.
+    function renderizarPensao() {
+      const container = document.getElementById('pensaoContainer');
+      if (!container) return;
+
+      if (!container.querySelector('.cartao-bloco')) {
+        const bloco = document.createElement('div');
+        bloco.className = 'cartao-bloco';
+        bloco.innerHTML = `
+          <div class="cartao-cabecalho" style="cursor: pointer;">
+            <span class="cartao-titulo"><span class="chevron" id="pensaoChevron">▼</span> 🧾 Pensão</span>
+            <div style="text-align: right;">
+              <div class="cartao-subtotal" id="pensaoDiferencaCabecalho">Resultado: R$ 0,00</div>
+            </div>
+          </div>
+          <div class="table-container" id="pensaoTableContainer">
+            <div style="padding: 16px 16px 0 16px;">
+              <div class="input-group" style="max-width: 260px;">
+                <label for="pensaoDevida">Pensão</label>
+                <input type="number" id="pensaoDevida" step="0.01" />
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px;">
+              <div class="card-kpi">
+                <div class="card-label">Pensão</div>
+                <div class="card-valor positivo" id="pensaoTotalDevido">R$ 0,00</div>
+              </div>
+              <div class="card-kpi">
+                <div class="card-label">Despesa Paga c/ Pensão</div>
+                <div class="card-valor negativo" id="pensaoTotalPago">R$ 0,00</div>
+              </div>
+              <div class="card-kpi">
+                <div class="card-label">Resultado</div>
+                <div class="card-valor" id="pensaoDiferencaCard">R$ 0,00</div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(bloco);
+        bloco.querySelector('.cartao-cabecalho').addEventListener('click', () => alternarCartao('pensao', renderizarPensao));
+        document.getElementById('pensaoDevida').addEventListener('input', () => {
+          salvarDados();
+          atualizarValoresPensao();
+        });
+      }
+
+      const recolhido = !!cartoesRecolhidos['pensao'];
+      document.getElementById('pensaoTableContainer').style.display = recolhido ? 'none' : '';
+      document.getElementById('pensaoChevron').textContent = recolhido ? '▶' : '▼';
+
+      atualizarValoresPensao();
+    }
+
+    // Recalcula e exibe Total Devido / Total Pago / Diferença, sem tocar na
+    // estrutura do bloco. Chamada tanto por renderizarPensao() quanto por
+    // atualizarResumo() sempre que qualquer lançamento muda de categoria.
+    function atualizarValoresPensao() {
+      const totalDevidoEl = document.getElementById('pensaoTotalDevido');
+      if (!totalDevidoEl) return; // bloco ainda não foi montado
+
+      const dados = dadosMeses[mesSelecionado] || {};
+      const totalDevido = dados.pensaoDevida || 0;
+
+      const itensCartaoPensao = (despesasCartao[mesSelecionado] || []).filter(i => i.categoria === 'Pensão');
+      const itensExtratoPensao = (extratoConta[mesSelecionado] || []).filter(i => i.categoria === 'Pensão' && !i.excluido);
+      const totalPago = itensCartaoPensao.reduce((s, i) => s + i.valor, 0) + itensExtratoPensao.reduce((s, i) => s + i.valor, 0);
+
+      const diferenca = totalDevido - totalPago;
+      const classeDiferenca = diferenca !== 0 ? 'diferenca-pendente' : '';
+
+      // Não sobrescreve o campo se a usuária estiver digitando nele agora
+      const inputEl = document.getElementById('pensaoDevida');
+      if (inputEl && document.activeElement !== inputEl) {
+        inputEl.value = totalDevido;
+      }
+
+      totalDevidoEl.textContent = formatCurrency(totalDevido);
+      document.getElementById('pensaoTotalPago').textContent = formatCurrency(totalPago);
+
+      const cardDiferenca = document.getElementById('pensaoDiferencaCard');
+      cardDiferenca.textContent = formatCurrency(diferenca);
+      cardDiferenca.className = 'card-valor ' + classeDiferenca;
+
+      const cabecalho = document.getElementById('pensaoDiferencaCabecalho');
+      cabecalho.textContent = 'Resultado: ' + formatCurrency(diferenca);
+      cabecalho.className = 'cartao-subtotal ' + classeDiferenca;
+    }
+
+    // Renderiza o bloco do extrato — mesmo padrão visual dos cartões
+    // (cabeçalho, subtotal, recolher/expandir), com colunas específicas do
+    // extrato (Tipo de operação em vez de Parcela/Fatura)
+    function renderizarExtrato() {
+      const container = document.getElementById('extratoPorContaContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const itens = extratoConta[mesSelecionado] || [];
+
+      if (itens.length === 0) {
+        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #898781; font-size: 13px; border: 1.5px dashed #d8d6cd; border-radius: 10px;">Nenhum lançamento de extrato importado para este mês ainda.</div>';
+        return;
+      }
+
+      const porOrigemMap = {};
+      const ordemOrigens = [];
+      itens.forEach((item, idx) => {
+        const chaveOrigem = item.origem || 'Conta Corrente';
+        if (!porOrigemMap[chaveOrigem]) {
+          porOrigemMap[chaveOrigem] = [];
+          ordemOrigens.push(chaveOrigem);
+        }
+        porOrigemMap[chaveOrigem].push({ item, idx });
+      });
+
+      ordemOrigens.forEach(nomeOrigem => {
+        const entradas = porOrigemMap[nomeOrigem];
+        const chaveRecolhido = 'extrato:' + nomeOrigem;
+        const recolhido = !!cartoesRecolhidos[chaveRecolhido];
+
+        // Regra 3 — o total carregado e a quantidade de lançamentos lidos
+        // refletem TUDO que foi extraído do arquivo, sem mudar com a
+        // exclusão (rastreabilidade)
+        const quantidadeLancamentos = entradas.length;
+        const totalCarregado = entradas.reduce((s, e) => s + e.item.valor, 0);
+
+        const excluidos = entradas.filter(e => e.item.excluido);
+        const quantidadeExcluidos = excluidos.length;
+        const valorExcluidos = excluidos.reduce((s, e) => s + e.item.valor, 0);
+
+        // Regra 2 — subtotal (o que efetivamente entra no Total de
+        // Despesas) exclui tanto categorias não computáveis (Terceiro/
+        // Pensão/Pagamento de Fatura) quanto lançamentos excluídos manualmente
+        const subtotal = entradas
+          .filter(e => categoriaContaNoCalculo(e.item.categoria) && !e.item.excluido)
+          .reduce((s, e) => s + e.item.valor, 0);
+
+        let linhasHtml = '';
+        entradas.forEach(({ item, idx }) => {
+          const classes = [];
+          if (item.autoClassificado) classes.push('auto-classificado');
+          const classeCor = classeDestaqueLinha(item);
+          if (classeCor) classes.push(classeCor);
+          if (item.precisaRevisao) classes.push('linha-revisao');
+          if (item.excluido) classes.push('linha-excluida');
+
+          let statusHtml = '';
+          if (item.excluido) {
+            statusHtml = '<span class="badge-excluido" title="Excluído manualmente — não conta em nenhum total. Pode ser restaurado a qualquer momento.">Excluído</span>';
+          } else if (item.precisaRevisao) {
+            statusHtml = '<span class="badge-revisao" title="Não foi possível ler o valor desta linha com segurança no PDF. Confira e complete manualmente.">⚠ verificar</span>';
+          } else if (item.categoria === 'Pagamento de Fatura') {
+            statusHtml = '<span class="badge-pagamento-fatura" title="Transferência entre contas — a despesa já foi contada nos lançamentos da própria fatura de cartão.">Pagto. fatura</span>';
+          } else if (item.autoClassificado) {
+            statusHtml = '<span class="badge-auto">auto</span>';
+          }
+
+          const celulaCategoria = item.excluido
+            ? `<span class="categoria-herdada">${item.categoria}</span>`
+            : `<select class="${!categoriaContaNoCalculo(item.categoria) ? 'select-terceiro' : ''}"
+                onchange="atualizarItemExtrato(${idx}, 'categoria', this.value)">
+                ${gerarOpcoesCategoria(item.categoria)}
+              </select>`;
+
+          // Regra 1 — exclusão individual SÓ existe aqui, no extrato; a
+          // fatura de cartão nunca tem essa ação (Terceiro/Pensão cobre o caso lá)
+          const celulaAcao = item.excluido
+            ? `<button class="secondary" style="padding: 6px 10px; font-size: 12px;" onclick="restaurarItemExtrato(${idx})" title="Restaurar este lançamento">↺ Restaurar</button>`
+            : `<button class="secondary" style="padding: 6px 10px; font-size: 12px;" onclick="excluirItemExtrato(${idx})" title="Excluir este lançamento (ex: transferência entre contas próprias, estorno, duplicidade)">✕ Excluir</button>`;
+
+          linhasHtml += `
+            <tr class="${classes.join(' ')}">
+              <td>${item.data || '—'}</td>
+              <td>${item.descricao}${statusHtml}</td>
+              <td>${item.tipoOperacao || '—'}</td>
+              <td>${item.precisaRevisao ? '—' : 'R$ ' + item.valor.toFixed(2)}</td>
+              <td>${celulaCategoria}</td>
+              <td>${celulaAcao}</td>
+            </tr>
+          `;
+        });
+
+        const linhaExcluidos = quantidadeExcluidos > 0
+          ? `<div class="cartao-total-carregado">${quantidadeExcluidos} excluído(s) manualmente: ${formatCurrency(valorExcluidos)}</div>`
+          : '';
+
+        const bloco = document.createElement('div');
+        bloco.className = 'cartao-bloco';
+        bloco.innerHTML = `
+          <div class="cartao-cabecalho" style="cursor: pointer;">
+            <span class="cartao-titulo"><span class="chevron">${recolhido ? '▶' : '▼'}</span> 🏦 ${nomeOrigem}</span>
+            <div style="text-align: right;">
+              <div class="cartao-subtotal">Subtotal: ${formatCurrency(subtotal)}</div>
+              <div class="cartao-total-carregado">${quantidadeLancamentos} lançamento(s) lidos — Total carregado: ${formatCurrency(totalCarregado)}</div>
+              ${linhaExcluidos}
+            </div>
+          </div>
+          <div class="table-container" style="${recolhido ? 'display:none;' : ''}">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição / Favorecido</th>
+                  <th>Tipo</th>
+                  <th>Valor (R$)</th>
+                  <th>Categoria</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>${linhasHtml}</tbody>
+            </table>
+          </div>
+        `;
+        const cabecalhoEl = bloco.querySelector('.cartao-cabecalho');
+        if (cabecalhoEl) {
+          cabecalhoEl.addEventListener('click', () => alternarCartao(chaveRecolhido, renderizarExtrato));
+        }
+        container.appendChild(bloco);
+      });
+    }
+
+    // Detecta em qual coluna está cada informação, olhando os nomes do cabeçalho
+    function detectarColunas(linhaCabecalho) {
+      const normalizar = v => (v || '').toString().toLowerCase().trim();
+      let idxData = -1, idxDescricao = -1, idxValor = -1, idxParcela = -1;
+
+      linhaCabecalho.forEach((col, idx) => {
+        const c = normalizar(col);
+        if (idxData === -1 && /data/.test(c)) idxData = idx;
+        if (idxDescricao === -1 && /(lan[cç]amento|descri[cç][aã]o|estabelecimento|hist[oó]rico)/.test(c)) idxDescricao = idx;
+        if (idxValor === -1 && /valor/.test(c)) idxValor = idx;
+        if (idxParcela === -1 && /parcela/.test(c)) idxParcela = idx;
+      });
+
+      return { idxData, idxDescricao, idxValor, idxParcela };
+    }
+
+    // A fatura do Itaú costuma trazer linhas de cabeçalho do cartão, período
+    // e saldo anterior ANTES da tabela de lançamentos propriamente dita, e às
+    // vezes um título de seção solto (ex: "Lançamentos") que também contém a
+    // palavra mas NÃO é a linha de colunas real. Por isso exigimos que a linha
+    // tenha tanto uma coluna de Data quanto uma de Lançamento/Descrição juntas
+    // — só assim garantimos que é o cabeçalho da tabela, e não um título solto.
+    function encontrarLinhaCabecalhoLancamento(rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const linha = rows[i] || [];
+        const deteccao = detectarColunas(linha);
+        if (deteccao.idxData !== -1 && deteccao.idxDescricao !== -1) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    // Gera as opções do dropdown de categoria, preservando qualquer
+    // categoria customizada já salva que não esteja na lista padrão
+    function gerarOpcoesCategoria(categoriaAtual) {
+      let opcoes = categoriasDisponiveis.slice();
+      if (categoriaAtual && !opcoes.includes(categoriaAtual)) {
+        opcoes = [categoriaAtual, ...opcoes];
+      }
+      return opcoes.map(cat =>
+        `<option value="${cat}" ${cat === categoriaAtual ? 'selected' : ''}>${cat}</option>`
+      ).join('');
+    }
+
+    // Processa uma matriz de linhas (vinda de CSV ou XLS/XLSX) de forma unificada
+    function processarLinhas(rows, infoArquivo) {
+      const resumoVazio = { itemCount: 0, autoClassificados: 0, ignoradosPagamento: 0, ignoradosMetadados: 0, ignoradosInvalidos: 0 };
+
+      if (!rows || rows.length === 0) {
+        return resumoVazio;
+      }
+
+      let idxData = 0, idxDescricao = 1, idxValor = 2, idxParcela = -1;
+      let startRow = 0;
+
+      // Regra: só considerar o que está abaixo da linha "Lançamento" na planilha.
+      // Tudo acima (dados do titular da conta, agência, conta, período da fatura,
+      // saldo anterior etc.) é ignorado.
+      const linhaCabecalhoIdx = encontrarLinhaCabecalhoLancamento(rows);
+
+      if (linhaCabecalhoIdx !== -1) {
+        const deteccao = detectarColunas(rows[linhaCabecalhoIdx]);
+        idxData = deteccao.idxData !== -1 ? deteccao.idxData : idxData;
+        idxDescricao = deteccao.idxDescricao !== -1 ? deteccao.idxDescricao : idxDescricao;
+        idxValor = deteccao.idxValor !== -1 ? deteccao.idxValor : idxValor;
+        idxParcela = deteccao.idxParcela;
+        startRow = linhaCabecalhoIdx + 1;
+      } else {
+        // Fallback: se não encontrar "Lançamento" em nenhuma linha (ex: CSV
+        // exportado sem esse cabeçalho), tenta detectar pela primeira linha
+        const deteccao = detectarColunas(rows[0]);
+        if (deteccao.idxData !== -1 || deteccao.idxDescricao !== -1 || deteccao.idxValor !== -1) {
+          idxData = deteccao.idxData !== -1 ? deteccao.idxData : idxData;
+          idxDescricao = deteccao.idxDescricao !== -1 ? deteccao.idxDescricao : idxDescricao;
+          idxValor = deteccao.idxValor !== -1 ? deteccao.idxValor : idxValor;
+          idxParcela = deteccao.idxParcela;
+          startRow = 1;
+        }
+      }
+
+      if (!despesasCartao[mesSelecionado]) {
+        despesasCartao[mesSelecionado] = [];
+      }
+
+      let itemCount = 0;
+      let autoClassificados = 0;
+      let ignoradosPagamento = 0;
+      let ignoradosInvalidos = 0;
+      let ignoradosMetadados = 0;
+
+      for (let i = startRow; i < rows.length; i++) {
+        const linha = rows[i];
+        if (!linha || linha.length === 0) continue;
+
+        // Proteção independente do mapeamento de colunas: se a linha for um
+        // rótulo do cabeçalho da fatura (Nome, Agência, Conta etc.), descarta
+        // antes de tentar extrair data/descrição/valor
+        if (linhaEhMetadadoDaFatura(linha)) {
+          ignoradosMetadados++;
+          continue;
+        }
+
+        const data = (linha[idxData] || '').toString().trim();
+        const descricao = (linha[idxDescricao] || '').toString().trim();
+        const valor = parseValorMonetario(linha[idxValor]);
+        const parcela = idxParcela !== -1 ? formatarParcela(linha[idxParcela]) : '';
+
+        if (!descricao || isNaN(valor)) {
+          ignoradosInvalidos++;
+          continue;
+        }
+
+        if (deveIgnorarLancamento(descricao)) {
+          ignoradosPagamento++;
+          continue;
+        }
+
+        const itemExistente = despesasCartao[mesSelecionado].find(
+          item => item.data === data && item.valor === valor && item.descricao === descricao
+        );
+
+        if (!itemExistente) {
+          const classificacaoAnterior = buscarClassificacaoAnterior(descricao);
+          const categoriaFinal = classificacaoAnterior
+            ? classificacaoAnterior.categoria
+            : categorizarAutomaticamente(descricao);
+
+          despesasCartao[mesSelecionado].push({
+            data,
+            descricao,
+            valor,
+            parcela,
+            categoria: categoriaFinal,
+            cartao: (infoArquivo && infoArquivo.cartao) || '',
+            fatura: (infoArquivo && infoArquivo.fatura) || '',
+            numeroCartao: (infoArquivo && infoArquivo.numeroCartao) || '',
+            autoClassificado: !!classificacaoAnterior
+          });
+          itemCount++;
+          if (classificacaoAnterior) autoClassificados++;
+        } else if (infoArquivo && !itemExistente.cartao) {
+          // Item já tinha sido importado antes desta funcionalidade existir
+          // (sem identificação de cartão/fatura) — completa retroativamente
+          // ao reimportar a mesma fatura, sem duplicar a linha
+          itemExistente.cartao = infoArquivo.cartao || '';
+          itemExistente.fatura = infoArquivo.fatura || '';
+          itemExistente.numeroCartao = infoArquivo.numeroCartao || '';
+        }
+      }
+
+      return { itemCount, autoClassificados, ignoradosPagamento, ignoradosMetadados, ignoradosInvalidos };
+    }
+
+    // Lê um único arquivo (CSV, XLS ou XLSX) e devolve uma Promise com a
+    // matriz de linhas, no mesmo formato para os dois tipos de arquivo
+    function lerArquivoComoLinhas(file) {
+      return new Promise((resolve, reject) => {
+        const nomeArquivo = file.name.toLowerCase();
+        const extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf('.') + 1);
+
+        if (extensao === 'csv') {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const linhas = e.target.result.split('\n').map(linha => linha.split(','));
+            resolve(linhas);
+          };
+          reader.onerror = () => reject(new Error('Erro ao ler o arquivo CSV.'));
+          reader.readAsText(file);
+
+        } else if (extensao === 'xls' || extensao === 'xlsx') {
+          if (typeof XLSX === 'undefined') {
+            reject(new Error('Biblioteca de leitura de Excel não está disponível.'));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const primeiraAba = workbook.SheetNames[0];
+              const planilha = workbook.Sheets[primeiraAba];
+              const linhas = XLSX.utils.sheet_to_json(planilha, { header: 1, raw: false, defval: '' });
+              resolve(linhas);
+            } catch (err) {
+              reject(new Error('Não foi possível ler o arquivo Excel.'));
+            }
+          };
+          reader.onerror = () => reject(new Error('Erro ao ler o arquivo Excel.'));
+          reader.readAsArrayBuffer(file);
+
+        } else {
+          reject(new Error('Formato não suportado.'));
+        }
+      });
+    }
+
+    // Extrai do nome do arquivo o identificador do CARTÃO (os 4 dígitos finais,
+    // ex: "..._9882-..." -> "Cartão final 9882") e a FATURA/competência de
+    // origem (mês+ano, ex: "...outubro2026..." -> "Outubro 2026"). As faturas
+    // do Itaú seguem o padrão "fatura-aberta-final_<cartão>-<mês><ano>.xlsx".
+    const MESES_PT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+    // Cartões conhecidos da família e a ordem fixa em que devem aparecer no
+    // painel, independentemente da ordem de importação dos arquivos.
+    const ORDEM_CARTOES_CONHECIDOS = ['1783', '9882', '1645'];
+    const NOMES_POR_CARTAO = { '1783': 'Marina', '9882': 'Regi', '1645': 'Marina' };
+
+    function prioridadeCartao(numeroCartao) {
+      const idx = ORDEM_CARTOES_CONHECIDOS.indexOf(numeroCartao);
+      return idx === -1 ? Infinity : idx;
+    }
+
+    function extrairInfoArquivo(nomeArquivoOriginal) {
+      const nomeArquivo = nomeArquivoOriginal.toLowerCase();
+
+      const matchCartao = nomeArquivo.match(/(\d{4})/);
+      const semExtensao = nomeArquivoOriginal.replace(/\.(csv|xlsx?|CSV|XLSX?)$/i, '');
+
+      let cartao, numeroCartao = '';
+      if (matchCartao) {
+        numeroCartao = matchCartao[1];
+        const nomePessoa = NOMES_POR_CARTAO[numeroCartao];
+        cartao = nomePessoa ? `Cartão final ${numeroCartao} - ${nomePessoa}` : `Cartão final ${numeroCartao}`;
+      } else {
+        cartao = semExtensao;
+      }
+
+      let fatura = '';
+      for (const mes of MESES_PT) {
+        const m = nomeArquivo.match(new RegExp(mes + '\\s*(\\d{4})'));
+        if (m) {
+          fatura = `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${m[1]}`;
+          break;
+        }
+      }
+      if (!fatura) fatura = semExtensao;
+
+      return { cartao, fatura, numeroCartao };
+    }
+
+    // Importa um ou mais arquivos de fatura de uma vez (ex: cartão da Marina +
+    // cartão da Regilene), somando todos ao mesmo mês selecionado
+    async function importarArquivo() {
+      const fileInput = document.getElementById('arquivoUpload');
+      const arquivos = Array.from(fileInput.files || []);
+
+      if (arquivos.length === 0) {
+        alert('Selecione um ou mais arquivos (.csv, .xls ou .xlsx)');
+        return;
+      }
+
+      const resumoTotal = { itemCount: 0, autoClassificados: 0, ignoradosPagamento: 0, ignoradosMetadados: 0, ignoradosInvalidos: 0 };
+      const arquivosComErro = [];
+
+      for (const arquivo of arquivos) {
+        try {
+          const linhas = await lerArquivoComoLinhas(arquivo);
+          const resumo = processarLinhas(linhas, extrairInfoArquivo(arquivo.name));
+          resumoTotal.itemCount += resumo.itemCount;
+          resumoTotal.autoClassificados += resumo.autoClassificados;
+          resumoTotal.ignoradosPagamento += resumo.ignoradosPagamento;
+          resumoTotal.ignoradosMetadados += resumo.ignoradosMetadados;
+          resumoTotal.ignoradosInvalidos += resumo.ignoradosInvalidos;
+        } catch (err) {
+          arquivosComErro.push(arquivo.name);
+        }
+      }
+
+      persistirMes(mesSelecionado, ['cartao']);
+      renderizarCartao();
+      atualizarResumo();
+
+      const prefixoArquivos = arquivos.length > 1 ? ` de ${arquivos.length} arquivos` : '';
+      let msg = `${resumoTotal.itemCount} item(ns) carregado(s)${prefixoArquivos} e categorizado(s) automaticamente`;
+      if (resumoTotal.autoClassificados > 0) {
+        msg += ` (${resumoTotal.autoClassificados} reconhecido(s) de meses anteriores, destacado em amarelo)`;
+      }
+      if (resumoTotal.ignoradosPagamento > 0) {
+        msg += `. ${resumoTotal.ignoradosPagamento} linha(s) de "Pagamento Com Saldo" desconsiderada(s)`;
+      }
+      if (resumoTotal.ignoradosMetadados > 0) {
+        msg += `. ${resumoTotal.ignoradosMetadados} linha(s) de identificação da fatura (Nome/Agência/Conta) desconsiderada(s)`;
+      }
+      if (resumoTotal.ignoradosInvalidos > 0) {
+        msg += `. ${resumoTotal.ignoradosInvalidos} linha(s) ignorada(s) por falta de descrição ou valor válido`;
+      }
+      if (arquivosComErro.length > 0) {
+        msg += `. Não foi possível ler: ${arquivosComErro.join(', ')}`;
+      }
+      mostrarStatus(msg, arquivosComErro.length > 0 && resumoTotal.itemCount === 0);
+    }
+
+    // Renderiza os lançamentos de cartão agrupados em um bloco por CARTÃO,
+    // com separação visual explícita (cabeçalho + subtotal), e dentro de
+    // cada bloco identifica a FATURA de origem de cada lançamento, com
+    // subtotal por fatura quando há mais de uma no mesmo cartão.
+    // Regra 3 — estado de recolhido/expandido por cartão (só afeta exibição,
+    // nunca cálculos). Fica em memória, por sessão do painel. As chaves do
+    // extrato usam o prefixo "extrato:" para nunca colidir com nomes de cartão.
+    const cartoesRecolhidos = {};
+
+    function alternarCartao(chave, funcaoRenderizar) {
+      cartoesRecolhidos[chave] = !cartoesRecolhidos[chave];
+      (funcaoRenderizar || renderizarCartao)();
+    }
+
+    function recolherTodosCartoes() {
+      const itens = obterItensComProjecoes(mesSelecionado);
+      itens.forEach(item => {
+        cartoesRecolhidos[item.cartao || 'Cartão não identificado'] = true;
+      });
+      renderizarCartao();
+    }
+
+    function expandirTodosCartoes() {
+      const itens = obterItensComProjecoes(mesSelecionado);
+      itens.forEach(item => {
+        cartoesRecolhidos[item.cartao || 'Cartão não identificado'] = false;
+      });
+      renderizarCartao();
+    }
+
+    function recolherTodosExtrato() {
+      const itens = extratoConta[mesSelecionado] || [];
+      itens.forEach(item => {
+        cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = true;
+      });
+      renderizarExtrato();
+    }
+
+    function expandirTodosExtrato() {
+      const itens = extratoConta[mesSelecionado] || [];
+      itens.forEach(item => {
+        cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = false;
+      });
+      renderizarExtrato();
+    }
+
+    // Regra — Padronização do Recolhimento dos Blocos: ação global que
+    // recolhe/expande Cartão + Extrato + Pensão de uma só vez, em
+    // complemento ao controle individual que cada bloco já tem. Puramente
+    // visual, como qualquer recolher/expandir — não toca em nenhum cálculo.
+    function recolherTudo() {
+      recolherTodosCartoes();
+      recolherTodosExtrato();
+      cartoesRecolhidos['pensao'] = true;
+      renderizarPensao();
+    }
+
+    function expandirTudo() {
+      expandirTodosCartoes();
+      expandirTodosExtrato();
+      cartoesRecolhidos['pensao'] = false;
+      renderizarPensao();
+    }
+
+    function renderizarCartao() {
+      const container = document.getElementById('cartaoPorCartaoContainer');
+      container.innerHTML = '';
+
+      // Regra 9: os itens exibidos incluem tanto os lançamentos reais quanto
+      // as parcelas futuras já projetadas para este mês
+      const itens = obterItensComProjecoes(mesSelecionado);
+
+      if (itens.length === 0) {
+        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #898781; font-size: 13px; border: 1.5px dashed #d8d6cd; border-radius: 10px;">Nenhuma despesa de cartão importada para este mês ainda.</div>';
+        return;
+      }
+
+      // Agrupa por cartão. Itens reais guardam o índice original em
+      // despesasCartao[mesSelecionado] (necessário para editar a categoria);
+      // itens projetados não têm índice — sua categoria é herdada do
+      // lançamento de origem e só pode ser alterada editando-o diretamente.
+      const reaisDoMes = despesasCartao[mesSelecionado] || [];
+      const porCartaoMap = {};
+      const ordemCartoes = [];
+      itens.forEach(item => {
+        const chaveCartao = item.cartao || 'Cartão não identificado';
+        if (!porCartaoMap[chaveCartao]) {
+          porCartaoMap[chaveCartao] = [];
+          ordemCartoes.push(chaveCartao);
+        }
+        const idx = item.projetado ? -1 : reaisDoMes.indexOf(item);
+        porCartaoMap[chaveCartao].push({ item, idx });
+      });
+
+      // Ordena os cartões pela ordem fixa conhecida (1783, 9882, 1645, ...);
+      // cartões não identificados nessa lista aparecem por último, na ordem
+      // em que foram encontrados (Regra 2)
+      ordemCartoes.sort((a, b) => {
+        const numA = (porCartaoMap[a][0] && porCartaoMap[a][0].item.numeroCartao) || '';
+        const numB = (porCartaoMap[b][0] && porCartaoMap[b][0].item.numeroCartao) || '';
+        return prioridadeCartao(numA) - prioridadeCartao(numB);
+      });
+
+      ordemCartoes.forEach(nomeCartao => {
+        const entradas = porCartaoMap[nomeCartao];
+        const recolhido = !!cartoesRecolhidos[nomeCartao];
+
+        // Regra 3 — subtotal do cartão respeita as exclusões por categoria
+        // (Terceiro/Pensão), incluindo eventuais parcelas projetadas
+        const subtotalCartao = entradas
+          .filter(e => categoriaContaNoCalculo(e.item.categoria))
+          .reduce((s, e) => s + e.item.valor, 0);
+
+        // Regra 4 — total carregado da fatura: soma BRUTA (sem filtro de
+        // categoria) de tudo que veio de fatura importada, excluindo
+        // parcelas projetadas (que não vieram de nenhum arquivo neste mês)
+        const totalCarregadoFatura = entradas
+          .filter(e => !e.item.projetado)
+          .reduce((s, e) => s + e.item.valor, 0);
+
+        // Subtotal por fatura dentro deste cartão (só considera lançamentos
+        // reais, que têm fatura de origem identificada)
+        const porFatura = {};
+        const ordemFaturas = [];
+        entradas.forEach(({ item }) => {
+          if (item.projetado) return;
+          const chaveFatura = item.fatura || 'Sem fatura identificada';
+          if (!(chaveFatura in porFatura)) {
+            porFatura[chaveFatura] = 0;
+            ordemFaturas.push(chaveFatura);
+          }
+          if (categoriaContaNoCalculo(item.categoria)) {
+            porFatura[chaveFatura] += item.valor;
+          }
+        });
+
+        let chipsFaturaHtml = '';
+        if (!recolhido && ordemFaturas.length > 1) {
+          chipsFaturaHtml = '<div class="fatura-chips">' +
+            ordemFaturas.map(f => `<span class="fatura-chip">${f}: <strong>${formatCurrency(porFatura[f])}</strong></span>`).join('') +
+            '</div>';
+        }
+
+        let linhasHtml = '';
+        entradas.forEach(({ item, idx }) => {
+          const classes = [];
+          if (item.autoClassificado) classes.push('auto-classificado');
+          const classeCor = classeDestaqueLinha(item);
+          if (classeCor) classes.push(classeCor);
+          if (item.projetado) classes.push('linha-projetada');
+
+          let statusHtml = '';
+          if (item.projetado) {
+            statusHtml = item.divergente
+              ? '<span class="badge-divergente" title="A fatura deste cartão já foi importada neste mês, mas esta parcela não foi encontrada nela — vale investigar.">⚠ divergente</span>'
+              : '<span class="badge-projetado">Projetado</span>';
+          } else if (item.autoClassificado) {
+            statusHtml = '<span class="badge-auto">auto</span>';
+          }
+
+          // Categoria de itens projetados é só leitura — para mudar, edite o
+          // lançamento real de origem (a projeção herda dele automaticamente)
+          const celulaCategoria = item.projetado
+            ? `<span class="categoria-herdada" title="Categoria herdada do lançamento original. Para alterar, edite a parcela real de origem.">${item.categoria}</span>`
+            : `<select class="${!categoriaContaNoCalculo(item.categoria) ? 'select-terceiro' : ''}"
+                onchange="atualizarItemCartao(${idx}, 'categoria', this.value)">
+                ${gerarOpcoesCategoria(item.categoria)}
+              </select>`;
+
+          linhasHtml += `
+            <tr class="${classes.join(' ')}">
+              <td>${item.data || '—'}</td>
+              <td>${item.parcela || '—'}</td>
+              <td>${item.descricao}${statusHtml}</td>
+              <td>${item.fatura || '—'}</td>
+              <td>R$ ${item.valor.toFixed(2)}</td>
+              <td>${celulaCategoria}</td>
+            </tr>
+          `;
+        });
+
+        const bloco = document.createElement('div');
+        bloco.className = 'cartao-bloco';
+        bloco.innerHTML = `
+          <div class="cartao-cabecalho" style="cursor: pointer;">
+            <span class="cartao-titulo"><span class="chevron">${recolhido ? '▶' : '▼'}</span> 💳 ${nomeCartao}</span>
+            <div style="text-align: right;">
+              <div class="cartao-subtotal">Subtotal do cartão: ${formatCurrency(subtotalCartao)}</div>
+              <div class="cartao-total-carregado">Total carregado da fatura: ${formatCurrency(totalCarregadoFatura)}</div>
+            </div>
+          </div>
+          ${chipsFaturaHtml}
+          <div class="table-container" style="${recolhido ? 'display:none;' : ''}">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Parcela</th>
+                  <th>Descrição</th>
+                  <th>Fatura</th>
+                  <th>Valor (R$)</th>
+                  <th>Categoria</th>
+                </tr>
+              </thead>
+              <tbody>${linhasHtml}</tbody>
+            </table>
+          </div>
+        `;
+        const cabecalhoEl = bloco.querySelector('.cartao-cabecalho');
+        if (cabecalhoEl) {
+          cabecalhoEl.addEventListener('click', () => alternarCartao(nomeCartao));
+        }
+        container.appendChild(bloco);
+      });
+    }
+
+    function atualizarItemCartao(index, campo, valor) {
+      if (despesasCartao[mesSelecionado] && despesasCartao[mesSelecionado][index]) {
+        despesasCartao[mesSelecionado][index][campo] = valor;
+        despesasCartao[mesSelecionado][index].autoClassificado = false;
+        // Marca que a categoria foi escolhida manualmente pela usuária —
+        // daqui pra frente, nenhuma correção automática (de-para, migração)
+        // pode mais sobrescrever este item (Regra 7)
+        if (campo === 'categoria') {
+          despesasCartao[mesSelecionado][index].categoriaManual = true;
+        }
+        persistirMes(mesSelecionado, ['cartao']);
+        renderizarCartao();
+        atualizarResumo();
+      }
+    }
+
+    function atualizarResumo() {
+      const mes = dadosMeses[mesSelecionado] || {};
+      
+      const totalReceita = camposReceita.reduce((sum, campo) => sum + (mes[campo] || 0), 0);
+      const totalFixas = camposFixos.reduce((sum, campo) => sum + (mes[campo] || 0), 0);
+
+      // Regra 3/9 — Total de Despesas soma os lançamentos reais MAIS as
+      // parcelas futuras já projetadas para este mês, respeitando as mesmas
+      // exclusões por categoria (Terceiro/Pensão)
+      const itensCartaoComProjecoes = obterItensComProjecoes(mesSelecionado);
+      const totalCartaoConsiderado = itensCartaoComProjecoes
+        .filter(item => categoriaContaNoCalculo(item.categoria))
+        .reduce((sum, item) => sum + item.valor, 0);
+      
+      const totalCartaoTerceiro = itensCartaoComProjecoes
+        .filter(item => !categoriaContaNoCalculo(item.categoria))
+        .reduce((sum, item) => sum + item.valor, 0);
+
+      // Regra 8 — lançamentos de débito do extrato somam ao Total de
+      // Despesas, com as mesmas exclusões (Terceiro/Pensão/Pagamento de
+      // Fatura — Regra 9). A nova exclusão individual e manual (Regra 2 da
+      // Exclusão de Lançamento do Extrato) some do cálculo do mesmo jeito.
+      const itensExtrato = extratoConta[mesSelecionado] || [];
+      const totalExtratoConsiderado = itensExtrato
+        .filter(item => categoriaContaNoCalculo(item.categoria) && !item.excluido)
+        .reduce((sum, item) => sum + item.valor, 0);
+
+      const totalExtratoExcluido = itensExtrato
+        .filter(item => !categoriaContaNoCalculo(item.categoria) && !item.excluido)
+        .reduce((sum, item) => sum + item.valor, 0);
+      
+      const totalDespesas = totalFixas + totalCartaoConsiderado + totalExtratoConsiderado;
+      const resultado = totalReceita - totalFixas - totalCartaoConsiderado - totalExtratoConsiderado;
+
+      document.getElementById('totalReceita').textContent = formatCurrency(totalReceita);
+      document.getElementById('totalFixas').textContent = formatCurrency(totalFixas);
+      document.getElementById('totalCartao').textContent = formatCurrency(totalCartaoConsiderado);
+      document.getElementById('totalExtratoKpi').textContent = formatCurrency(totalExtratoConsiderado);
+      document.getElementById('totalDespesas').textContent = formatCurrency(totalDespesas);
+      document.getElementById('resultado').textContent = formatCurrency(resultado);
+      document.getElementById('totalCartaoPropio').textContent = formatCurrency(totalCartaoConsiderado);
+      document.getElementById('totalCartaoTerceiro').textContent = formatCurrency(totalCartaoTerceiro);
+      document.getElementById('totalExtratoConsiderado').textContent = formatCurrency(totalExtratoConsiderado);
+      document.getElementById('totalExtratoExcluido').textContent = formatCurrency(totalExtratoExcluido);
+
+      const resumo = document.getElementById('resumo');
+      const resultadoEl = document.getElementById('resultado');
+      if (resultado >= 0) {
+        resumo.classList.add('superavit');
+        resumo.classList.remove('deficit');
+        resultadoEl.classList.remove('deficit');
+      } else {
+        resumo.classList.remove('superavit');
+        resumo.classList.add('deficit');
+        resultadoEl.classList.add('deficit');
+      }
+
+      // Regra (Gráfico "Gastos de Cartão por Categoria") — base de cálculo é
+      // EXCLUSIVAMENTE os lançamentos das faturas de cartão realizadas no
+      // mês. Extrato, parcelas projetadas e Terceiro/Pensão nunca entram
+      // aqui — o extrato tem seus próprios totais, fora deste gráfico.
+      const itensReaisCartao = despesasCartao[mesSelecionado] || [];
+      atualizarGraficoPizza(itensReaisCartao);
+
+      atualizarIndicadorParcelasFuturas();
+      atualizarValoresPensao();
+    }
+
+    // Regra 11 — mantém o indicador de parcelas futuras previstas sempre
+    // atualizado, independente do mês selecionado (visão consolidada)
+    function atualizarIndicadorParcelasFuturas() {
+      const container = document.getElementById('parcelasFuturasContainer');
+      const totalEl = document.getElementById('parcelasFuturasTotal');
+      const listaEl = document.getElementById('parcelasFuturasPorMes');
+      if (!container || !totalEl || !listaEl) return;
+
+      const { totalGeral, porMes } = calcularTotalParcelasFuturas();
+
+      if (totalGeral <= 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      totalEl.textContent = formatCurrency(totalGeral);
+
+      const mesesOrdenados = Object.keys(porMes).sort();
+      listaEl.innerHTML = mesesOrdenados.map(m =>
+        `<div class="parcela-mes-chip"><span>${nomeMesLegivel(m)}</span><strong>${formatCurrency(porMes[m])}</strong></div>`
+      ).join('');
+    }
+
+    // Paleta de cores fixa por categoria, para o gráfico ficar consistente
+    // entre meses (a mesma categoria sempre com a mesma cor)
+    const CORES_CATEGORIA = {
+      'Alimentação': '#e08a3c', 'Ifood': '#d0393a', 'Supermercado': '#3f8f4f',
+      'Farmácia': '#3f9e9e', 'Saúde': '#3f7fa6', 'Combustível': '#c2410c', 'Carro': '#8a6d3b', 'Uber': '#b98a3c',
+      'Compras': '#a05fb4', 'Assinaturas': '#5c6bc0', 'Lazer': '#c2185b',
+      'Educação': '#00838f', 'Serviços': '#6d4c41', 'Pet': '#7cb342', 'Casa': '#558b2f',
+      'Viagem': '#0277bd', 'Reembolso': '#00acc1', 'Outros': '#78909c'
+    };
+
+    let graficoPizza = null;
+
+    // Recalcula e redesenha o gráfico de pizza dos gastos de cartão por
+    // categoria do mês selecionado (itens Terceiro nunca entram aqui, já
+    // que também não entram no total de despesas)
+    // Regra 14 — plugin próprio do Chart.js que desenha o % diretamente em
+    // cima das 4 maiores fatias da pizza (as demais ficam só na legenda)
+    const rotulosTop4Plugin = {
+      id: 'rotulosTop4',
+      afterDraw(chart) {
+        const dataset = chart.data.datasets[0];
+        if (!dataset || !dataset.data.length) return;
+        const meta = chart.getDatasetMeta(0);
+        const total = dataset.data.reduce((a, b) => a + b, 0);
+        if (total <= 0) return;
+
+        // Como os dados já chegam ordenados do maior pro menor (Regra 13),
+        // os 4 primeiros índices já são as 4 maiores fatias
+        const indicesTop4 = dataset.data.map((v, i) => i).slice(0, 4);
+
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        indicesTop4.forEach(i => {
+          const arc = meta.data[i];
+          if (!arc) return;
+          const pct = ((dataset.data[i] / total) * 100).toFixed(1);
+          const angulo = (arc.startAngle + arc.endAngle) / 2;
+          const raio = ((arc.innerRadius || 0) + arc.outerRadius) / 2;
+          const x = arc.x + Math.cos(angulo) * raio;
+          const y = arc.y + Math.sin(angulo) * raio;
+          ctx.fillText(`${pct}%`, x, y);
+        });
+
+        ctx.restore();
+      }
+    };
+
+    // Gera a legenda customizada em lista de 3 colunas, alinhada à esquerda,
+    // mostrando cor + nome + valor + percentual por categoria — o Chart.js
+    // não suporta esse layout nativamente pela legenda embutida
+    function gerarLegendaPizza(categorias, valores, cores, total) {
+      const legendaEl = document.getElementById('graficoPizzaLegenda');
+      if (!legendaEl) return;
+
+      legendaEl.innerHTML = categorias.map((cat, i) => {
+        const pct = total > 0 ? ((valores[i] / total) * 100).toFixed(1) : '0.0';
+        return `
+          <div class="legenda-item">
+            <span class="legenda-cor" style="background:${cores[i]}"></span>
+            <span class="legenda-nome">${cat}</span>
+            <span class="legenda-valor">${formatCurrency(valores[i])}</span>
+            <span class="legenda-pct">${pct}%</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function atualizarGraficoPizza(itensCartao) {
+      const container = document.getElementById('graficoPizzaContainer');
+      const canvas = document.getElementById('graficoPizzaCategorias');
+      const vazio = document.getElementById('graficoPizzaVazio');
+      const legendaEl = document.getElementById('graficoPizzaLegenda');
+
+      const porCategoria = {};
+      (itensCartao || [])
+        .filter(item => categoriaContaNoCalculo(item.categoria))
+        .forEach(item => {
+          porCategoria[item.categoria] = (porCategoria[item.categoria] || 0) + item.valor;
+        });
+
+      // Regra — categorias ordenadas da MAIOR para a MENOR; a legenda
+      // customizada segue essa mesma ordem
+      const categorias = Object.keys(porCategoria).sort((a, b) => porCategoria[b] - porCategoria[a]);
+
+      // Nunca ficar "mudo": se não há dados, diz isso; se há dados mas a
+      // biblioteca do gráfico não carregou (ex: falha de rede), diz isso também
+      if (typeof Chart === 'undefined' || !canvas) {
+        if (container) container.style.display = 'none';
+        if (legendaEl) legendaEl.innerHTML = '';
+        if (vazio) {
+          if (categorias.length === 0) {
+            vazio.style.display = 'block';
+            vazio.textContent = 'Nenhuma despesa de cartão considerada no cálculo deste mês ainda.';
+          } else {
+            vazio.style.display = 'block';
+            vazio.textContent = 'Não foi possível carregar a biblioteca do gráfico (verifique sua conexão e recarregue a página). Os totais por categoria continuam corretos nos cálculos acima.';
+          }
+        }
+        return;
+      }
+
+      if (categorias.length === 0) {
+        container.style.display = 'none';
+        if (legendaEl) legendaEl.innerHTML = '';
+        if (vazio) vazio.style.display = 'block';
+        if (graficoPizza) {
+          graficoPizza.destroy();
+          graficoPizza = null;
+        }
+        return;
+      }
+
+      if (vazio) vazio.style.display = 'none';
+      container.style.display = 'block';
+      const valores = categorias.map(cat => porCategoria[cat]);
+      const cores = categorias.map(cat => CORES_CATEGORIA[cat] || '#a8a29e');
+      const total = valores.reduce((a, b) => a + b, 0);
+
+      gerarLegendaPizza(categorias, valores, cores, total);
+
+      try {
+        if (graficoPizza) {
+          graficoPizza.data.labels = categorias;
+          graficoPizza.data.datasets[0].data = valores;
+          graficoPizza.data.datasets[0].backgroundColor = cores;
+          graficoPizza.update();
+        } else {
+          graficoPizza = new Chart(canvas, {
+            type: 'pie',
+            data: {
+              labels: categorias,
+              datasets: [{ data: valores, backgroundColor: cores }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                // Legenda embutida do Chart.js desligada — usamos a legenda
+                // customizada em HTML/CSS (3 colunas, alinhada à esquerda)
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => {
+                      const totalTooltip = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                      const pct = totalTooltip > 0 ? ((ctx.parsed / totalTooltip) * 100).toFixed(1) : '0.0';
+                      return `${ctx.label}: ${formatCurrency(ctx.parsed)} (${pct}%)`;
+                    }
+                  }
+                }
+              }
+            },
+            plugins: [rotulosTop4Plugin]
+          });
+        }
+        // Garante o dimensionamento correto mesmo se o canvas estava dentro
+        // de um container display:none no momento da criação do gráfico
+        graficoPizza.resize();
+      } catch (err) {
+        // Se o Chart.js falhar por qualquer motivo, não trava o resto do
+        // painel — apenas mostra a mensagem de vazio no lugar do gráfico
+        container.style.display = 'none';
+        if (vazio) {
+          vazio.style.display = 'block';
+          vazio.textContent = 'Não foi possível desenhar o gráfico. Recarregue a página e tente novamente.';
+        }
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
