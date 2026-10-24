@@ -191,6 +191,10 @@
       flex-wrap: wrap;
     }
 
+    .config-api-texto-2 {
+      margin-top: 14px;
+    }
+
     .config-api-linha input {
       flex: 1;
       min-width: 240px;
@@ -372,60 +376,6 @@
       margin: 14px 0 8px 0;
     }
 
-    .parcelas-categorias {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .parcela-cat-linha {
-      display: grid;
-      grid-template-columns: 12px minmax(0, 1fr) auto 52px;
-      column-gap: 10px;
-      row-gap: 4px;
-      align-items: center;
-      font-size: 13px;
-      color: var(--aviso);
-    }
-
-    .parcela-cat-cor {
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-    }
-
-    .parcela-cat-nome {
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .parcela-cat-valor {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .parcela-cat-pct {
-      text-align: right;
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .parcela-cat-barra {
-      grid-column: 2 / -1;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(122, 78, 0, 0.14);
-      overflow: hidden;
-    }
-
-    .parcela-cat-barra > span {
-      display: block;
-      height: 100%;
-      border-radius: 999px;
-    }
-
     .parcelas-nota {
       font-size: 11px;
       color: var(--aviso);
@@ -433,11 +383,139 @@
       opacity: 0.9;
     }
 
-    .pizza-card {
+    .barras-card {
       padding: 16px 20px;
       background: var(--inset);
       border: 1px solid var(--linha);
       border-radius: 14px;
+    }
+
+    /* Gráficos de barras por categoria (Cartão realizado e Parcelas futuras):
+       a altura é definida pelo JS conforme o número de categorias */
+    .barras-area {
+      position: relative;
+      width: 100%;
+      min-height: 110px;
+    }
+
+    /* Tabela equivalente ao gráfico: fica só para leitor de tela; se o
+       Chart.js não carregar, vira uma tabela comum, visível */
+    .somente-leitor {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .tabela-barras-alternativa table {
+      font-size: 12px;
+    }
+
+    .tabela-barras-alternativa th,
+    .tabela-barras-alternativa td {
+      padding: 6px 8px;
+    }
+
+    /* Filtro por categoria nas compras do cartão */
+    .filtro-cat {
+      margin: 16px 0 12px 0;
+      padding: 12px 14px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 12px;
+    }
+
+    .filtro-cat[hidden] {
+      display: none;
+    }
+
+    .filtro-cat-topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      margin-bottom: 10px;
+    }
+
+    .filtro-cat-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .filtro-cat-resumo {
+      font-size: 12px;
+      color: var(--texto-sec);
+    }
+
+    .filtro-cat-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-filtro,
+    .chip-filtro:hover {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--linha-forte);
+      border-radius: 999px;
+      background: var(--painel);
+      color: var(--texto);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .chip-filtro:hover {
+      background: var(--inset-2);
+    }
+
+    .chip-filtro.ativo,
+    .chip-filtro.ativo:hover {
+      background: var(--acento);
+      border-color: var(--acento);
+      color: var(--sobre-acento);
+    }
+
+    .chip-filtro:focus-visible {
+      outline: 3px solid rgba(46, 95, 209, 0.45);
+      outline-offset: 2px;
+    }
+
+    .chip-cor {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1.5px #ffffff;
+    }
+
+    .chip-qtd {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--inset-2);
+      color: var(--texto-sec);
+    }
+
+    .chip-filtro.ativo .chip-qtd {
+      background: rgba(255, 255, 255, 0.24);
+      color: var(--sobre-acento);
+    }
+
+    .cartao-filtrado {
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--acento-texto);
     }
 
     .titulo-bloco {
@@ -687,6 +765,78 @@
       flex-wrap: wrap;
       align-items: center;
     }
+
+    /* ── Sincronizar com o banco (Open Finance) ── */
+    .sync-box {
+      padding: 14px 16px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .sync-topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sync-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .sync-titulo span {
+      font-weight: 500;
+      color: var(--texto-sec);
+    }
+
+    .sync-nota {
+      font-size: 12px;
+      color: var(--texto-sec);
+      margin-top: 8px;
+    }
+
+    .sync-resultado {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sync-resultado[hidden] {
+      display: none;
+    }
+
+    .sync-item {
+      padding: 10px 12px;
+      background: var(--painel);
+      border: 1px solid var(--linha);
+      border-left: 4px solid var(--acento);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--texto-sec);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sync-item.ok { border-left-color: var(--bom-fill); }
+    .sync-item.alerta { border-left-color: #b8860b; }
+    .sync-item.erro { border-left-color: var(--mau-fill); }
+
+    .sync-item-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .sync-item.ok .sync-item-titulo { color: var(--bom); }
+    .sync-item.alerta .sync-item-titulo { color: var(--aviso); }
+    .sync-item.erro .sync-item-titulo { color: var(--mau); }
 
     .file-hint {
       font-size: 11px;
@@ -1101,58 +1251,6 @@
       align-items: center;
     }
 
-    /* Legenda customizada do gráfico de pizza — Regra: lista em 3 colunas,
-       alinhada à esquerda (o Chart.js não suporta esse layout nativamente) */
-    .legenda-pizza {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px 16px;
-      margin-top: 16px;
-      text-align: left;
-    }
-
-    .legenda-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      min-width: 0;
-    }
-
-    .legenda-cor {
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
-    .legenda-nome {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .legenda-valor {
-      color: var(--texto-sec);
-      white-space: nowrap;
-      font-size: 11px;
-    }
-
-    .legenda-pct {
-      font-weight: 600;
-      white-space: nowrap;
-      min-width: 38px;
-      text-align: right;
-    }
-
-    @media (max-width: 480px) {
-      .legenda-pizza {
-        grid-template-columns: 1fr;
-      }
-    }
-
     .info-box {
       background: rgba(46, 95, 209, 0.10);
       border-left: 3px solid var(--acento);
@@ -1225,6 +1323,12 @@
       <div class="config-api-linha">
         <input type="text" id="urlApiInput" placeholder="https://script.google.com/macros/s/.../exec" />
         <button onclick="configurarUrlApi()">Salvar e conectar</button>
+      </div>
+      <div class="config-api-texto config-api-texto-2">
+        <strong>Código de sincronização</strong> (opcional) — só para buscar a fatura direto do banco por Open Finance: o mesmo valor da propriedade <code>SYNC_TOKEN</code> do Apps Script. Fica somente neste navegador.
+      </div>
+      <div class="config-api-linha">
+        <input type="password" id="syncTokenInput" autocomplete="off" placeholder="código de sincronização" />
       </div>
     </div>
 
@@ -1437,6 +1541,17 @@
         <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Reembolso (fora do total)</span>
       </div>
 
+      <!-- Open Finance (via Meu Pluggy + Apps Script): traz a fatura do mês
+           selecionado direto do banco, pelo mesmo caminho da planilha/PDF -->
+      <div class="sync-box" id="syncOpenFinance">
+        <div class="sync-topo">
+          <div class="sync-titulo">🔄 Sincronizar com o banco <span>(Open Finance)</span></div>
+          <button id="btnSincronizar" onclick="sincronizarFaturaOpenFinance()">Sincronizar fatura do mês</button>
+        </div>
+        <div class="sync-nota">Busca no banco a fatura que <strong>vence</strong> no mês selecionado e acrescenta só o que ainda não estiver aqui — nada do que você já importou ou categorizou é apagado.</div>
+        <div class="sync-resultado" id="syncResultado" role="status" aria-live="polite" hidden></div>
+      </div>
+
       <div class="actions">
         <div class="input-group" style="flex-direction: row; gap: 8px; align-items: center;">
           <label for="arquivoUpload" style="margin: 0;">Importar Fatura(s) Itaú:</label>
@@ -1448,6 +1563,16 @@
       
       <div class="info-box" id="csvStatus" style="display: none;">
         <strong>Status:</strong> <span id="csvStatusText"></span>
+      </div>
+
+      <!-- Filtro por categoria: mostra só as compras de uma (ou mais) categorias
+           — ex: só Assinaturas, só Uber, só Ifood. Montado pelo JS. -->
+      <div class="filtro-cat" id="filtroCategoriasCartao" hidden>
+        <div class="filtro-cat-topo">
+          <span class="filtro-cat-titulo">🔎 Filtrar por categoria</span>
+          <span class="filtro-cat-resumo" id="filtroCategoriasResumo" role="status" aria-live="polite"></span>
+        </div>
+        <div class="filtro-cat-chips" id="filtroCategoriasChips" role="group" aria-label="Filtrar as compras do cartão por categoria"></div>
       </div>
 
       <div id="cartaoPorCartaoContainer"></div>
@@ -1475,7 +1600,10 @@
               <div class="parcelas-total" id="parcelasFuturasTotal">R$ 0,00</div>
             </div>
             <div class="parcelas-secao">Por categoria</div>
-            <div id="parcelasFuturasPorCategoria" class="parcelas-categorias" role="list"></div>
+            <div class="barras-area" id="parcelasBarrasArea">
+              <canvas id="graficoBarrasParcelas" role="img" aria-label="Parcelas futuras previstas por categoria"></canvas>
+            </div>
+            <div id="parcelasFuturasPorCategoria" class="somente-leitor"></div>
             <div class="parcelas-secao">Por mês</div>
             <div id="parcelasFuturasPorMes" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
             <div class="parcelas-nota">Não inclui lançamentos de Terceiros, Pensão e Reembolso.</div>
@@ -1483,14 +1611,14 @@
         </div>
 
         <div class="coluna">
-          <div id="graficoPizzaContainer" class="pizza-card" style="display: none;">
+          <div id="graficoBarrasContainer" class="barras-card" style="display: none;">
             <h3 class="titulo-bloco">Gastos de cartão por categoria (realizado)</h3>
-            <div style="max-width: 380px; margin: 0 auto;">
-              <canvas id="graficoPizzaCategorias"></canvas>
+            <div class="barras-area" id="gastosBarrasArea">
+              <canvas id="graficoBarrasCategorias" role="img" aria-label="Gastos de cartão por categoria no mês"></canvas>
             </div>
-            <div id="graficoPizzaLegenda" class="legenda-pizza"></div>
+            <div id="gastosBarrasTabela" class="somente-leitor"></div>
           </div>
-          <div id="graficoPizzaVazio" class="vazio-bloco" style="display: none;">
+          <div id="graficoBarrasVazio" class="vazio-bloco" style="display: none;">
             Nenhuma despesa de cartão considerada no cálculo deste mês ainda.
           </div>
         </div>
@@ -1563,6 +1691,10 @@
     // computador que configure a mesma URL).
     const CHAVE_URL_API = 'painelDespesasApiUrl';
     let urlApi = localStorage.getItem(CHAVE_URL_API) || '';
+    // Código de sincronização (Open Finance): a "senha" do botão de buscar a
+    // fatura no banco. Fica só neste navegador, como a URL do Apps Script.
+    const CHAVE_SYNC_TOKEN = 'painelDespesasSyncToken';
+    let syncToken = localStorage.getItem(CHAVE_SYNC_TOKEN) || '';
     const ultimaAtualizacaoPorMes = {};
 
     // Lista de meses suportados pelo painel — precisa ir além dos meses já
@@ -1793,7 +1925,13 @@
       container.style.display = jaAberto ? 'none' : 'block';
       if (!jaAberto) {
         document.getElementById('urlApiInput').value = urlApi;
+        atualizarPlaceholderToken();
       }
+    }
+
+    function atualizarPlaceholderToken() {
+      const campo = document.getElementById('syncTokenInput');
+      if (campo) campo.placeholder = syncToken ? 'já salvo neste navegador — digite para trocar' : 'código de sincronização';
     }
 
     // Salva a URL do Apps Script digitada pela usuária (fica no navegador
@@ -1808,6 +1946,14 @@
       }
       urlApi = novaUrl;
       localStorage.setItem(CHAVE_URL_API, urlApi);
+      const campoToken = document.getElementById('syncTokenInput');
+      const novoToken = campoToken ? (campoToken.value || '').trim() : '';
+      if (novoToken) {
+        syncToken = novoToken;
+        localStorage.setItem(CHAVE_SYNC_TOKEN, syncToken);
+        campoToken.value = '';
+      }
+      atualizarPlaceholderToken();
       document.getElementById('avisoBanco').style.display = 'none';
       await carregarDadosCompartilhados();
       garantirMesInicializado(mesSelecionado);
@@ -1913,6 +2059,7 @@
       document.getElementById('mesSelecionado').addEventListener('change', (e) => {
         mesSelecionado = e.target.value;
         localStorage.setItem(CHAVE_MES_VISUALIZADO, mesSelecionado);
+        mostrarResultadoSync([]);
         garantirMesInicializado(mesSelecionado);
         carregarCamposNaTela();
         recolherBlocosPorPadrao();
@@ -2018,6 +2165,13 @@
         });
       });
       mesesAlterados.forEach(mes => persistirMes(mes, ['cartao']));
+    }
+
+    // Texto vindo de arquivo ou do banco nunca entra como HTML: tudo que é
+    // interpolado em innerHTML passa por aqui
+    function escaparHtml(t) {
+      return String(t === null || t === undefined ? '' : t)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function formatCurrency(value) {
@@ -3033,7 +3187,7 @@
         opcoes = [categoriaAtual, ...opcoes];
       }
       return opcoes.map(cat =>
-        `<option value="${cat}" ${cat === categoriaAtual ? 'selected' : ''}>${cat}</option>`
+        `<option value="${escaparHtml(cat)}" ${cat === categoriaAtual ? 'selected' : ''}>${escaparHtml(cat)}</option>`
       ).join('');
     }
 
@@ -3405,6 +3559,182 @@
       return { cartao, fatura, numeroCartao };
     }
 
+    // ────────────────────────────────────────────────────────────
+    // Open Finance — fatura do cartão direto do banco (Meu Pluggy)
+    // ────────────────────────────────────────────────────────────
+    // O Apps Script (que guarda as chaves) consulta o banco e devolve os
+    // lançamentos já normalizados. Aqui eles entram pelo MESMO caminho da
+    // planilha/PDF (registrarItemCartao): sem duplicar, reconhecendo a
+    // categoria de meses anteriores, e sem apagar nada que já existe.
+
+    async function solicitarFaturasAoBanco(mes) {
+      const resp = await fetch(urlApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: 'sincronizarFaturas', token: syncToken, mes })
+      });
+      const dados = await resp.json();
+      if (!dados || !dados.ok) throw new Error((dados && dados.erro) || 'Falha ao consultar o banco');
+      return dados;
+    }
+
+    // Aplica a resposta do Apps Script ao mês. Devolve um resumo por fatura
+    // (para a tela) e nunca lança por causa de um lançamento estranho.
+    function aplicarFaturasOpenFinance(resposta, mes) {
+      const resumo = {
+        mes, faturas: [], novos: 0, jaExistiam: 0, ignoradosPagamento: 0, futurasIgnoradas: 0,
+        autoClassificados: 0, disponiveis: (resposta && resposta.disponiveis) || [], avisos: (resposta && resposta.avisos) || []
+      };
+      if (!despesasCartao[mes]) despesasCartao[mes] = [];
+      const lista = despesasCartao[mes];
+
+      // registrarItemCartao grava no mês selecionado: aponta para o mês da
+      // fatura só durante a aplicação e volta depois
+      const mesOriginal = mesSelecionado;
+      mesSelecionado = mes;
+      try {
+        ((resposta && resposta.contas) || []).forEach(conta => {
+          (conta.faturas || []).forEach(fat => {
+            const linhaResumo = {
+              rotulo: fat.rotulo, status: fat.status, vencimento: fat.vencimento || null, totalBanco: fat.totalBanco,
+              cartao: conta.nome, titular: conta.titular, metodo: fat.metodo, baixados: 0, soma: 0,
+              novos: 0, jaExistiam: 0, ignoradosPagamento: 0, futurasIgnoradas: (fat.ignorados && fat.ignorados.futuras) || 0
+            };
+            linhaResumo.ignoradosPagamento += (fat.ignorados && fat.ignorados.pagamentos) || 0;
+
+            (fat.lancamentos || []).forEach(l => {
+              const valor = Number(l.valor);
+              if (!l.descricao || isNaN(valor)) return;
+              if (deveIgnorarLancamento(l.descricao)) { linhaResumo.ignoradosPagamento++; return; }
+              linhaResumo.baixados++;
+              linhaResumo.soma += valor;
+
+              // o mesmo lançamento do banco nunca entra duas vezes, mesmo que a
+              // data mude quando ele sai de "pendente" para "lançado"
+              if (l.id && lista.some(i => i.ofId === l.id)) { linhaResumo.jaExistiam++; return; }
+
+              const infoCartao = l.final
+                ? infoCartaoPorNumero(l.final, { fatura: fat.rotulo })
+                : { fatura: fat.rotulo, cartao: conta.nome || 'Cartão', numeroCartao: '' };
+              const contadores = { itemCount: 0, autoClassificados: 0 };
+              registrarItemCartao({ data: l.data, descricao: l.descricao, valor, parcela: l.parcela || '' }, infoCartao, contadores);
+              if (contadores.itemCount) {
+                lista[lista.length - 1].ofId = l.id || '';
+                linhaResumo.novos++;
+              } else {
+                linhaResumo.jaExistiam++;
+              }
+              resumo.autoClassificados += contadores.autoClassificados;
+            });
+
+            linhaResumo.soma = Math.round(linhaResumo.soma * 100) / 100;
+            linhaResumo.diferenca = (fat.totalBanco === null || fat.totalBanco === undefined)
+              ? null : Math.round((fat.totalBanco - linhaResumo.soma) * 100) / 100;
+            resumo.novos += linhaResumo.novos;
+            resumo.jaExistiam += linhaResumo.jaExistiam;
+            resumo.ignoradosPagamento += linhaResumo.ignoradosPagamento;
+            resumo.futurasIgnoradas += linhaResumo.futurasIgnoradas;
+            resumo.faturas.push(linhaResumo);
+          });
+        });
+      } finally {
+        mesSelecionado = mesOriginal;
+      }
+
+      // cartões que acabaram de aparecer começam recolhidos, como os demais
+      lista.forEach(i => {
+        const chave = i.cartao || 'Cartão não identificado';
+        if (cartoesRecolhidos[chave] === undefined) cartoesRecolhidos[chave] = true;
+      });
+      return resumo;
+    }
+
+    function mostrarResultadoSync(itens) {
+      const box = document.getElementById('syncResultado');
+      if (!box) return;
+      box.innerHTML = '';
+      itens.forEach(it => {
+        const el = document.createElement('div');
+        el.className = 'sync-item ' + (it.tipo || '');
+        const t = document.createElement('div');
+        t.className = 'sync-item-titulo';
+        t.textContent = it.titulo;
+        el.appendChild(t);
+        (it.linhas || []).forEach(txt => {
+          const p = document.createElement('div');
+          p.textContent = txt;
+          el.appendChild(p);
+        });
+        box.appendChild(el);
+      });
+      box.hidden = itens.length === 0;
+    }
+
+    // Texto da tela a partir do resumo (sem HTML: tudo via textContent)
+    function descreverResumoSync(resumo) {
+      const itens = [];
+      const nomeMes = nomeMesLegivel(resumo.mes);
+      if (resumo.faturas.length === 0) {
+        const disp = resumo.disponiveis.length
+          ? 'Faturas que o banco informou: ' + resumo.disponiveis.map(d => `${d.rotulo} (${d.status === 'ABERTA' ? 'aberta' : 'fechada'})`).join(', ') + '.'
+          : 'O banco não informou nenhuma fatura.';
+        itens.push({ tipo: 'alerta', titulo: `Nenhuma fatura com vencimento em ${nomeMes} encontrada no banco.`, linhas: [disp, 'Selecione o mês em que a fatura vence e tente de novo.'] });
+      }
+      resumo.faturas.forEach(f => {
+        const aberta = f.status === 'ABERTA';
+        const quem = [f.titular, f.cartao].filter(Boolean).join(' · ');
+        const cabecalho = `${f.rotulo} — ${aberta ? 'fatura em aberto (parcial)' : 'fechada, vence em ' + f.vencimento}${quem ? ' — ' + quem : ''}`;
+        const linhas = [];
+        let tipo = 'ok';
+        if (aberta) {
+          linhas.push(`Lançamentos baixados: ${f.baixados} (${formatCurrency(f.soma)}). O total só fecha quando o banco emitir a fatura.`);
+          tipo = 'alerta';
+        } else if (f.diferenca === 0) {
+          linhas.push(`Banco: ${formatCurrency(f.totalBanco)} · Lançamentos baixados: ${f.baixados} (${formatCurrency(f.soma)}) ✔ fecha com a fatura.`);
+        } else {
+          linhas.push(`Banco: ${formatCurrency(f.totalBanco)} · Lançamentos baixados: ${f.baixados} (${formatCurrency(f.soma)}) · Diferença: ${formatCurrency(Math.abs(f.diferenca))}`);
+          linhas.push('⚠ Não fecha: juros, IOF, encargos ou lançamentos que o banco ainda não detalhou costumam explicar. Compare com a fatura no app.');
+          tipo = 'alerta';
+        }
+        linhas.push(`Novos neste painel: ${f.novos} · Já existiam: ${f.jaExistiam} · Pagamentos de fatura ignorados: ${f.ignoradosPagamento} · Parcelas futuras ignoradas: ${f.futurasIgnoradas}`);
+        if (f.metodo === 'datas') linhas.push('ℹ Alguns lançamentos foram ligados a esta fatura pela data, porque o banco não informou a fatura deles. Confira o total.');
+        itens.push({ tipo, titulo: (tipo === 'ok' ? '✔ ' : '⚠ ') + cabecalho, linhas });
+      });
+      if (resumo.avisos.length) itens.push({ tipo: 'alerta', titulo: 'Avisos do banco', linhas: resumo.avisos });
+      return itens;
+    }
+
+    async function sincronizarFaturaOpenFinance() {
+      const botao = document.getElementById('btnSincronizar');
+      if (!urlApi || !syncToken) {
+        mostrarResultadoSync([{
+          tipo: 'erro', titulo: 'Falta configurar a sincronização',
+          linhas: ['Abra "⚙ Planilha compartilhada" no topo, confira a URL do Apps Script e preencha o "Código de sincronização" (o mesmo SYNC_TOKEN do Apps Script).']
+        }]);
+        return;
+      }
+      const mes = mesSelecionado;
+      const textoOriginal = botao.textContent;
+      botao.disabled = true;
+      botao.textContent = 'Consultando o banco…';
+      mostrarResultadoSync([]);
+      try {
+        const resposta = await solicitarFaturasAoBanco(mes);
+        const resumo = aplicarFaturasOpenFinance(resposta, mes);
+        if (resumo.novos > 0) await persistirMes(mes, ['cartao']);
+        if (mes === mesSelecionado) {
+          renderizarCartao();
+          atualizarResumo();
+        }
+        mostrarResultadoSync(descreverResumoSync(resumo));
+      } catch (err) {
+        mostrarResultadoSync([{ tipo: 'erro', titulo: 'Não foi possível sincronizar', linhas: [String(err && err.message ? err.message : err)] }]);
+      } finally {
+        botao.disabled = false;
+        botao.textContent = textoOriginal;
+      }
+    }
+
     // Importa um ou mais arquivos de fatura de uma vez (ex: cartão da Marina +
     // cartão da Regilene), somando todos ao mesmo mês selecionado
     async function importarArquivo() {
@@ -3522,14 +3852,13 @@
         if (chevron) chevron.textContent = recolhida ? '▶' : '▼';
         if (cabecalho) cabecalho.setAttribute('aria-expanded', String(!recolhida));
       });
-      // A pizza de categorias mora dentro da seção do cartão. Um canvas criado
-      // enquanto a seção estava recolhida (tamanho 0) não anima direito ao
-      // aparecer; por isso, na hora de abrir, o gráfico é recriado já visível.
-      if (cartaoAcabouDeAbrir && graficoPizza) {
+      // Os gráficos de barras moram dentro da seção do cartão. Um canvas criado
+      // enquanto a seção estava recolhida (largura 0) sai sem medida certa; por
+      // isso, na hora de abrir, os dois são redesenhados já visíveis.
+      if (cartaoAcabouDeAbrir) {
         try {
-          graficoPizza.destroy();
-          graficoPizza = null;
-          atualizarGraficoPizza(despesasCartao[mesSelecionado] || []);
+          atualizarGraficoBarrasGastos(despesasCartao[mesSelecionado] || []);
+          atualizarIndicadorParcelasFuturas();
         } catch (e) { /* só afeta o desenho */ }
       }
     }
@@ -3553,6 +3882,109 @@
       });
     }
 
+    // ── Filtro por categoria nas compras do cartão ──
+    // Quais categorias estão marcadas (vale para os dois cartões e para as
+    // parcelas projetadas). Vazio = mostra tudo. Só afeta a exibição: nenhum
+    // total, gráfico ou cálculo muda com o filtro.
+    const filtroCategoriasCartao = new Set();
+
+    function categoriaDoItem(item) {
+      return item.categoria || 'Outros';
+    }
+
+    // Categorias presentes nos itens, com quantidade e soma; na ordem da
+    // lista fixa de categorias (e as personalizadas por último)
+    function categoriasDosItens(itens) {
+      const mapa = {};
+      itens.forEach(i => {
+        const c = categoriaDoItem(i);
+        if (!mapa[c]) mapa[c] = { categoria: c, qtd: 0, total: 0 };
+        mapa[c].qtd += 1;
+        mapa[c].total += Number(i.valor) || 0;
+      });
+      const posicao = c => { const p = categoriasDisponiveis.indexOf(c); return p < 0 ? 999 : p; };
+      return Object.values(mapa).sort((a, b) => (posicao(a.categoria) - posicao(b.categoria)) || a.categoria.localeCompare(b.categoria, 'pt-BR'));
+    }
+
+    function pluralLancamentos(n) {
+      return n + (n === 1 ? ' lançamento' : ' lançamentos');
+    }
+
+    function alternarFiltroCategoria(categoria) {
+      if (categoria === null) filtroCategoriasCartao.clear();
+      else if (filtroCategoriasCartao.has(categoria)) filtroCategoriasCartao.delete(categoria);
+      else filtroCategoriasCartao.add(categoria);
+      // Com o filtro ligado, abre os cartões que têm o que foi pedido — senão
+      // o resultado ficaria escondido atrás de um cartão recolhido
+      if (filtroCategoriasCartao.size > 0) {
+        obterItensComProjecoes(mesSelecionado).forEach(i => {
+          if (filtroCategoriasCartao.has(categoriaDoItem(i))) {
+            cartoesRecolhidos[i.cartao || 'Cartão não identificado'] = false;
+          }
+        });
+      }
+      renderizarCartao();
+    }
+
+    function criarChipFiltro(rotulo, qtd, categoria, ativo) {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'chip-filtro' + (ativo ? ' ativo' : '');
+      botao.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+      botao.setAttribute('data-chave', categoria === null ? '' : categoria);
+      if (categoria) {
+        const cor = document.createElement('span');
+        cor.className = 'chip-cor';
+        cor.style.background = CORES_CATEGORIA[categoria] || '#5f7682';
+        botao.appendChild(cor);
+      }
+      const nome = document.createElement('span');
+      nome.textContent = rotulo;
+      botao.appendChild(nome);
+      const q = document.createElement('span');
+      q.className = 'chip-qtd';
+      q.textContent = String(qtd);
+      botao.appendChild(q);
+      botao.addEventListener('click', () => {
+        alternarFiltroCategoria(categoria);
+        devolverFocoAoChip(categoria);
+      });
+      return botao;
+    }
+
+    // A barra é refeita a cada clique; quem usa o teclado não pode perder o
+    // lugar. O foco volta ao chip clicado (ou a "Todas", se a categoria saiu).
+    function devolverFocoAoChip(categoria) {
+      const chips = document.getElementById('filtroCategoriasChips');
+      if (!chips || !chips.children) return;
+      const botoes = Array.prototype.slice.call(chips.children);
+      const alvo = botoes.find(b => b.getAttribute('data-chave') === (categoria === null ? '' : categoria)) || botoes[0];
+      if (alvo && alvo.focus) alvo.focus();
+    }
+
+    // Monta a barra de filtro (chips) e a linha de resumo. Tudo por
+    // textContent — nome de categoria nunca entra como HTML.
+    function renderizarBarraFiltroCategorias(disponiveis, itens, visiveis) {
+      const caixa = document.getElementById('filtroCategoriasCartao');
+      const chips = document.getElementById('filtroCategoriasChips');
+      const resumo = document.getElementById('filtroCategoriasResumo');
+      if (!caixa || !chips) return;
+      caixa.hidden = false;
+      chips.textContent = '';
+      const ativo = filtroCategoriasCartao.size > 0;
+      chips.appendChild(criarChipFiltro('Todas', itens.length, null, !ativo));
+      disponiveis.forEach(d => chips.appendChild(criarChipFiltro(d.categoria, d.qtd, d.categoria, filtroCategoriasCartao.has(d.categoria))));
+      if (!resumo) return;
+      if (!ativo) {
+        resumo.textContent = pluralLancamentos(itens.length) + ' neste mês';
+        return;
+      }
+      const total = visiveis.reduce((s, i) => s + (Number(i.valor) || 0), 0);
+      const fora = visiveis.filter(i => !categoriaContaNoCalculo(i.categoria)).reduce((s, i) => s + (Number(i.valor) || 0), 0);
+      resumo.textContent = `Mostrando ${visiveis.length} de ${pluralLancamentos(itens.length)} · Total ${formatCurrency(total)}` +
+        (fora > 0 ? ` (${formatCurrency(fora)} fora do cálculo da família)` : '');
+    }
+
     function renderizarCartao() {
       const container = document.getElementById('cartaoPorCartaoContainer');
       container.innerHTML = '';
@@ -3562,9 +3994,21 @@
       const itens = obterItensComProjecoes(mesSelecionado);
 
       if (itens.length === 0) {
+        const caixaFiltro = document.getElementById('filtroCategoriasCartao');
+        if (caixaFiltro) caixaFiltro.hidden = true;
         container.innerHTML = '<div class="vazio-bloco">Nenhuma despesa de cartão importada para este mês ainda.</div>';
         return;
       }
+
+      // Filtro por categoria: descarta marcas de categorias que não existem
+      // neste mês (senão ficaria um filtro "invisível" mostrando tudo)
+      const disponiveis = categoriasDosItens(itens);
+      [...filtroCategoriasCartao].forEach(c => {
+        if (!disponiveis.some(d => d.categoria === c)) filtroCategoriasCartao.delete(c);
+      });
+      const filtroAtivo = filtroCategoriasCartao.size > 0;
+      const passaNoFiltro = i => !filtroAtivo || filtroCategoriasCartao.has(categoriaDoItem(i));
+      renderizarBarraFiltroCategorias(disponiveis, itens, itens.filter(passaNoFiltro));
 
       // Agrupa por cartão. Itens reais guardam o índice original em
       // despesasCartao[mesSelecionado] (necessário para editar a categoria);
@@ -3595,6 +4039,13 @@
       ordemCartoes.forEach(nomeCartao => {
         const entradas = porCartaoMap[nomeCartao];
         const recolhido = !!cartoesRecolhidos[nomeCartao];
+
+        // Com filtro ligado, só entram as linhas da(s) categoria(s) marcada(s);
+        // cartão sem nenhuma delas some da lista. Os subtotais do cartão
+        // continuam sendo os da fatura inteira (para conferir com o banco).
+        const entradasVisiveis = entradas.filter(e => passaNoFiltro(e.item));
+        if (filtroAtivo && entradasVisiveis.length === 0) return;
+        const somaFiltrada = entradasVisiveis.reduce((s, e) => s + (Number(e.item.valor) || 0), 0);
 
         // Regra 3 — subtotal do cartão respeita as exclusões por categoria
         // (Terceiro/Pensão), incluindo eventuais parcelas projetadas
@@ -3628,12 +4079,12 @@
         let chipsFaturaHtml = '';
         if (!recolhido && ordemFaturas.length > 1) {
           chipsFaturaHtml = '<div class="fatura-chips">' +
-            ordemFaturas.map(f => `<span class="fatura-chip">${f}: <strong>${formatCurrency(porFatura[f])}</strong></span>`).join('') +
+            ordemFaturas.map(f => `<span class="fatura-chip">${escaparHtml(f)}: <strong>${formatCurrency(porFatura[f])}</strong></span>`).join('') +
             '</div>';
         }
 
         let linhasHtml = '';
-        entradas.forEach(({ item, idx }) => {
+        entradasVisiveis.forEach(({ item, idx }) => {
           const classes = [];
           if (item.autoClassificado) classes.push('auto-classificado');
           const classeCor = classeDestaqueLinha(item);
@@ -3655,7 +4106,7 @@
           // Categoria de itens projetados é só leitura — para mudar, edite o
           // lançamento real de origem (a projeção herda dele automaticamente)
           const celulaCategoria = item.projetado
-            ? `<span class="categoria-herdada" title="Categoria herdada do lançamento original. Para alterar, edite a parcela real de origem.">${item.categoria}</span>`
+            ? `<span class="categoria-herdada" title="Categoria herdada do lançamento original. Para alterar, edite a parcela real de origem.">${escaparHtml(item.categoria)}</span>`
             : `<select class="${!categoriaContaNoCalculo(item.categoria) ? 'select-terceiro' : ''}"
                 onchange="atualizarItemCartao(${idx}, 'categoria', this.value)">
                 ${gerarOpcoesCategoria(item.categoria)}
@@ -3663,10 +4114,10 @@
 
           linhasHtml += `
             <tr class="${classes.join(' ')}">
-              <td>${item.data || '—'}</td>
-              <td>${item.parcela || '—'}</td>
-              <td>${item.descricao}${statusHtml}</td>
-              <td>${item.fatura || '—'}</td>
+              <td>${escaparHtml(item.data || '—')}</td>
+              <td>${escaparHtml(item.parcela || '—')}</td>
+              <td>${escaparHtml(item.descricao)}${statusHtml}</td>
+              <td>${escaparHtml(item.fatura || '—')}</td>
               <td>${item.precisaRevisao ? '—' : 'R$ ' + item.valor.toFixed(2)}</td>
               <td>${celulaCategoria}</td>
             </tr>
@@ -3677,10 +4128,11 @@
         bloco.className = 'cartao-bloco';
         bloco.innerHTML = `
           <div class="cartao-cabecalho" style="cursor: pointer;">
-            <span class="cartao-titulo"><span class="chevron">${recolhido ? '▶' : '▼'}</span> 💳 ${nomeCartao}</span>
+            <span class="cartao-titulo"><span class="chevron">${recolhido ? '▶' : '▼'}</span> 💳 ${escaparHtml(nomeCartao)}</span>
             <div style="text-align: right;">
               <div class="cartao-subtotal">Subtotal do cartão: ${formatCurrency(subtotalCartao)}</div>
               <div class="cartao-total-carregado">Total carregado da fatura: ${formatCurrency(totalCarregadoFatura)}</div>
+              ${filtroAtivo ? `<div class="cartao-filtrado">Filtrado: ${formatCurrency(somaFiltrada)} · ${pluralLancamentos(entradasVisiveis.length)}</div>` : ''}
             </div>
           </div>
           ${chipsFaturaHtml}
@@ -3769,7 +4221,7 @@
       // mês. Extrato, parcelas projetadas e Terceiro/Pensão nunca entram
       // aqui — o extrato tem seus próprios totais, fora deste gráfico.
       const itensReaisCartao = despesasCartao[mesSelecionado] || [];
-      atualizarGraficoPizza(itensReaisCartao);
+      atualizarGraficoBarrasGastos(itensReaisCartao);
 
       atualizarIndicadorParcelasFuturas();
       atualizarValoresPensao();
@@ -3789,33 +4241,19 @@
 
       if (totalGeral <= 0) {
         container.style.display = 'none';
+        destruirBarrasCategoria('parcelas');
         return;
       }
 
       container.style.display = 'block';
       totalEl.textContent = formatCurrency(totalGeral);
 
-      // Abertura por categoria: da maior para a menor, com a mesma cor da
-      // pizza de gastos (a categoria mantém a identidade nos dois blocos)
-      const catEl = document.getElementById('parcelasFuturasPorCategoria');
-      if (catEl) {
-        const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        const categorias = Object.keys(porCategoria)
-          .sort((a, b) => (porCategoria[b] - porCategoria[a]) || a.localeCompare(b, 'pt-BR'));
-        catEl.innerHTML = categorias.map(cat => {
-          const valor = porCategoria[cat];
-          const pct = (valor / totalGeral) * 100;
-          const cor = CORES_CATEGORIA[cat] || '#5f7682';
-          return `
-            <div class="parcela-cat-linha" role="listitem">
-              <span class="parcela-cat-cor" style="background:${cor}"></span>
-              <span class="parcela-cat-nome" title="${esc(cat)}">${esc(cat)}</span>
-              <span class="parcela-cat-valor">${formatCurrency(valor)}</span>
-              <span class="parcela-cat-pct">${pct.toFixed(1)}%</span>
-              <span class="parcela-cat-barra" aria-hidden="true"><span style="width:${Math.max(pct, 1.5).toFixed(1)}%;background:${cor}"></span></span>
-            </div>`;
-        }).join('');
-      }
+      // Abertura por categoria em gráfico de barras (da maior para a menor,
+      // com a mesma cor que a categoria tem no gráfico de gastos do cartão)
+      desenharBarrasCategoria('parcelas',
+        { canvas: 'graficoBarrasParcelas', tabela: 'parcelasFuturasPorCategoria', area: 'parcelasBarrasArea' },
+        porCategoria,
+        { descricao: 'Parcelas futuras previstas por categoria', corTexto: corDoTema('--aviso', '#7a4e00') });
 
       const mesesOrdenados = Object.keys(porMes).sort();
       listaEl.innerHTML = mesesOrdenados.map(m =>
@@ -3837,177 +4275,182 @@
       'Viagem': '#0277bd', 'Reembolso': '#007e8d', 'Outros': '#5f7682'
     };
 
-    let graficoPizza = null;
-
-    // Cor de texto (azul-marinho escuro ou branco) com mais contraste sobre uma cor
-    function corTextoSobre(hex) {
-      const n = parseInt(String(hex).slice(1), 16);
-      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-      const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-      const contrasteComBranco = 1.05 / (L + 0.05);
-      const contrasteComMarinho = (L + 0.05) / (0.0163 + 0.05);
-      return contrasteComBranco >= contrasteComMarinho ? '#ffffff' : '#0f2146';
+    // Cor de um token CSS do tema (com valor de reserva se o navegador não responder)
+    function corDoTema(nome, reserva) {
+      try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+        return v || reserva;
+      } catch (e) { return reserva; }
     }
 
-    // Recalcula e redesenha o gráfico de pizza dos gastos de cartão por
-    // categoria do mês selecionado (itens Terceiro nunca entram aqui, já
-    // que também não entram no total de despesas)
-    // Regra 14 — plugin próprio do Chart.js que desenha o % diretamente em
-    // cima das 4 maiores fatias da pizza (as demais ficam só na legenda)
-    const rotulosTop4Plugin = {
-      id: 'rotulosTop4',
-      afterDraw(chart) {
-        const dataset = chart.data.datasets[0];
-        if (!dataset || !dataset.data.length) return;
+    // ── Gráficos de barras por categoria ──
+    // Servem a dois lugares com o mesmo desenho: "Gastos de cartão por
+    // categoria (realizado)" e "Parcelas Futuras Previstas". Barras
+    // horizontais, da maior para a menor; cada categoria mantém a mesma cor
+    // nos dois; valor e % escritos na ponta da barra, em tinta de texto.
+    const graficosBarrasCategoria = { gastos: null, parcelas: null };
+
+    // Plugin próprio do Chart.js: escreve "R$ valor · %" logo depois da ponta
+    // de cada barra (nunca na cor da barra — a cor só identifica a categoria)
+    const rotulosBarrasPlugin = {
+      id: 'rotulosBarras',
+      afterDatasetsDraw(chart, args, opcoes) {
+        if (!opcoes || !opcoes.textos) return;
         const meta = chart.getDatasetMeta(0);
-        const total = dataset.data.reduce((a, b) => a + b, 0);
-        if (total <= 0) return;
-
-        // Como os dados já chegam ordenados do maior pro menor (Regra 13),
-        // os 4 primeiros índices já são as 4 maiores fatias
-        const indicesTop4 = dataset.data.map((v, i) => i).slice(0, 4);
-
         const ctx = chart.ctx;
         ctx.save();
-        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
-        ctx.textAlign = 'center';
+        ctx.font = `600 11px ${FONTE_GRAFICO}`;
+        ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-
-        indicesTop4.forEach(i => {
-          const arc = meta.data[i];
-          if (!arc) return;
-          const pct = ((dataset.data[i] / total) * 100).toFixed(1);
-          const corFatia = Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[i] : dataset.backgroundColor;
-          ctx.fillStyle = corTextoSobre(corFatia);
-          const angulo = (arc.startAngle + arc.endAngle) / 2;
-          const raio = ((arc.innerRadius || 0) + arc.outerRadius) / 2;
-          const x = arc.x + Math.cos(angulo) * raio;
-          const y = arc.y + Math.sin(angulo) * raio;
-          ctx.fillText(`${pct}%`, x, y);
+        ctx.fillStyle = opcoes.cor || '#0f2146';
+        meta.data.forEach((barra, i) => {
+          if (opcoes.textos[i]) ctx.fillText(opcoes.textos[i], barra.x + 8, barra.y);
         });
-
         ctx.restore();
       }
     };
 
-    // Gera a legenda customizada em lista de 3 colunas, alinhada à esquerda,
-    // mostrando cor + nome + valor + percentual por categoria — o Chart.js
-    // não suporta esse layout nativamente pela legenda embutida
-    function gerarLegendaPizza(categorias, valores, cores, total) {
-      const legendaEl = document.getElementById('graficoPizzaLegenda');
-      if (!legendaEl) return;
-
-      legendaEl.innerHTML = categorias.map((cat, i) => {
-        const pct = total > 0 ? ((valores[i] / total) * 100).toFixed(1) : '0.0';
-        return `
-          <div class="legenda-item">
-            <span class="legenda-cor" style="background:${cores[i]}"></span>
-            <span class="legenda-nome" title="${cat}">${cat}</span>
-            <span class="legenda-valor">${formatCurrency(valores[i])}</span>
-            <span class="legenda-pct">${pct}%</span>
-          </div>
-        `;
-      }).join('');
+    // Ordena (maior → menor) e calcula % e cores — função pura, também usada
+    // nos testes
+    function resumirPorCategoria(porCategoria) {
+      const categorias = Object.keys(porCategoria)
+        .sort((a, b) => (porCategoria[b] - porCategoria[a]) || a.localeCompare(b, 'pt-BR'));
+      const valores = categorias.map(c => porCategoria[c]);
+      const total = valores.reduce((a, b) => a + b, 0);
+      return {
+        categorias, valores, total,
+        percentuais: valores.map(v => (total > 0 ? (v / total) * 100 : 0)),
+        cores: categorias.map(c => CORES_CATEGORIA[c] || '#5f7682')
+      };
     }
 
-    function atualizarGraficoPizza(itensCartao) {
-      const container = document.getElementById('graficoPizzaContainer');
-      const canvas = document.getElementById('graficoPizzaCategorias');
-      const vazio = document.getElementById('graficoPizzaVazio');
-      const legendaEl = document.getElementById('graficoPizzaLegenda');
+    function percentualTexto(p) {
+      return p.toFixed(1).replace('.', ',') + '%';
+    }
+
+    function destruirBarrasCategoria(chave) {
+      if (graficosBarrasCategoria[chave]) {
+        try { graficosBarrasCategoria[chave].destroy(); } catch (e) { /* já destruído */ }
+        graficosBarrasCategoria[chave] = null;
+      }
+    }
+
+    // Desenha (ou redesenha) um dos gráficos. ids: { canvas, tabela, area }.
+    // Devolve true se o gráfico foi desenhado; se o Chart.js não carregou, a
+    // tabela equivalente fica visível no lugar.
+    function desenharBarrasCategoria(chave, ids, porCategoria, opcoes) {
+      const canvas = document.getElementById(ids.canvas);
+      const tabelaEl = document.getElementById(ids.tabela);
+      const areaEl = document.getElementById(ids.area);
+      const dados = resumirPorCategoria(porCategoria);
+      destruirBarrasCategoria(chave);
+
+      const temChart = typeof Chart !== 'undefined' && !!canvas;
+      if (tabelaEl) {
+        preencherTabelaEm(tabelaEl, ['Categoria', 'Valor', '% do total'],
+          dados.categorias.map((c, i) => [c, formatCurrency(dados.valores[i]), percentualTexto(dados.percentuais[i])]));
+        tabelaEl.className = temChart ? 'somente-leitor' : 'tabela-barras-alternativa';
+      }
+      if (areaEl) areaEl.style.display = temChart ? '' : 'none';
+      if (!temChart || dados.categorias.length === 0) return false;
+
+      const area = canvas.parentElement;
+      const largura = (area && area.clientWidth) || 0;
+      const estreito = largura > 0 && largura < 440;
+      if (area) area.style.height = Math.max(110, dados.categorias.length * 30 + 12) + 'px';
+
+      const tema = temaGrafico();
+      const corTexto = opcoes.corTexto || tema.texto;
+      const textos = dados.categorias.map((c, i) => (estreito
+        ? formatCurrency(dados.valores[i])
+        : `${formatCurrency(dados.valores[i])} · ${percentualTexto(dados.percentuais[i])}`));
+
+      const principais = dados.categorias.slice(0, 5).map((c, i) => `${c} ${formatCurrency(dados.valores[i])}`).join(', ');
+      const resto = dados.categorias.length > 5 ? ` e mais ${dados.categorias.length - 5}` : '';
+      canvas.setAttribute('aria-label', `${opcoes.descricao}: ${principais}${resto}.`);
+
+      try {
+        graficosBarrasCategoria[chave] = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: dados.categorias,
+            datasets: [{
+              data: dados.valores,
+              backgroundColor: dados.cores, hoverBackgroundColor: dados.cores,
+              borderWidth: 0, borderRadius: 4, borderSkipped: 'start',
+              maxBarThickness: 18, barPercentage: 0.72, categoryPercentage: 0.9
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'nearest', axis: 'y', intersect: false },
+            layout: { padding: { top: 2, right: estreito ? 88 : 140, bottom: 2 } },
+            plugins: {
+              legend: { display: false },
+              rotulosBarras: { textos, cor: corTexto },
+              tooltip: {
+                backgroundColor: tema.superficie, titleColor: tema.texto, bodyColor: tema.texto,
+                borderColor: tema.eixo, borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true,
+                titleFont: { family: FONTE_GRAFICO, weight: '600' }, bodyFont: { family: FONTE_GRAFICO },
+                callbacks: {
+                  label: (c) => `${formatCurrency(c.parsed.x)} (${percentualTexto(dados.percentuais[c.dataIndex])})`
+                }
+              }
+            },
+            scales: {
+              x: { display: false, beginAtZero: true },
+              y: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { color: corTexto, autoSkip: false, font: { size: 12, weight: '600', family: FONTE_GRAFICO } }
+              }
+            }
+          },
+          plugins: [rotulosBarrasPlugin]
+        });
+        return true;
+      } catch (err) {
+        // se o Chart.js falhar, o painel segue funcionando — fica a tabela
+        destruirBarrasCategoria(chave);
+        if (areaEl) areaEl.style.display = 'none';
+        if (tabelaEl) tabelaEl.className = 'tabela-barras-alternativa';
+        return false;
+      }
+    }
+
+    // Gastos de cartão por categoria do mês selecionado (itens fora do
+    // cálculo — Terceiro, Pensão, Reembolso — nunca entram, como no total)
+    function atualizarGraficoBarrasGastos(itensCartao) {
+      const container = document.getElementById('graficoBarrasContainer');
+      const vazio = document.getElementById('graficoBarrasVazio');
 
       const porCategoria = {};
       (itensCartao || [])
         .filter(item => categoriaContaNoCalculo(item.categoria))
         .forEach(item => {
-          porCategoria[item.categoria] = (porCategoria[item.categoria] || 0) + item.valor;
+          const cat = item.categoria || 'Outros';
+          porCategoria[cat] = (porCategoria[cat] || 0) + item.valor;
         });
 
-      // Regra — categorias ordenadas da MAIOR para a MENOR; a legenda
-      // customizada segue essa mesma ordem
-      const categorias = Object.keys(porCategoria).sort((a, b) => porCategoria[b] - porCategoria[a]);
-
-      // Nunca ficar "mudo": se não há dados, diz isso; se há dados mas a
-      // biblioteca do gráfico não carregou (ex: falha de rede), diz isso também
-      if (typeof Chart === 'undefined' || !canvas) {
+      if (Object.keys(porCategoria).length === 0) {
+        destruirBarrasCategoria('gastos');
         if (container) container.style.display = 'none';
-        if (legendaEl) legendaEl.innerHTML = '';
         if (vazio) {
-          if (categorias.length === 0) {
-            vazio.style.display = 'block';
-            vazio.textContent = 'Nenhuma despesa de cartão considerada no cálculo deste mês ainda.';
-          } else {
-            vazio.style.display = 'block';
-            vazio.textContent = 'Não foi possível carregar a biblioteca do gráfico (verifique sua conexão e recarregue a página). Os totais por categoria continuam corretos nos cálculos acima.';
-          }
-        }
-        return;
-      }
-
-      if (categorias.length === 0) {
-        container.style.display = 'none';
-        if (legendaEl) legendaEl.innerHTML = '';
-        if (vazio) vazio.style.display = 'block';
-        if (graficoPizza) {
-          graficoPizza.destroy();
-          graficoPizza = null;
+          vazio.style.display = 'block';
+          vazio.textContent = 'Nenhuma despesa de cartão considerada no cálculo deste mês ainda.';
         }
         return;
       }
 
       if (vazio) vazio.style.display = 'none';
-      container.style.display = 'block';
-      const valores = categorias.map(cat => porCategoria[cat]);
-      const cores = categorias.map(cat => CORES_CATEGORIA[cat] || '#c4c0ba');
-      const total = valores.reduce((a, b) => a + b, 0);
-
-      gerarLegendaPizza(categorias, valores, cores, total);
-
-      try {
-        if (graficoPizza) {
-          graficoPizza.data.labels = categorias;
-          graficoPizza.data.datasets[0].data = valores;
-          graficoPizza.data.datasets[0].backgroundColor = cores;
-          graficoPizza.update();
-        } else {
-          graficoPizza = new Chart(canvas, {
-            type: 'pie',
-            data: {
-              labels: categorias,
-              datasets: [{ data: valores, backgroundColor: cores, borderColor: '#f1f6ff', borderWidth: 2, hoverBorderColor: '#f1f6ff' }]
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                // Legenda embutida do Chart.js desligada — usamos a legenda
-                // customizada em HTML/CSS (3 colunas, alinhada à esquerda)
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label: (ctx) => {
-                      const totalTooltip = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                      const pct = totalTooltip > 0 ? ((ctx.parsed / totalTooltip) * 100).toFixed(1) : '0.0';
-                      return `${ctx.label}: ${formatCurrency(ctx.parsed)} (${pct}%)`;
-                    }
-                  }
-                }
-              }
-            },
-            plugins: [rotulosTop4Plugin]
-          });
-        }
-        // Garante o dimensionamento correto mesmo se o canvas estava dentro
-        // de um container display:none no momento da criação do gráfico
-        graficoPizza.resize();
-      } catch (err) {
-        // Se o Chart.js falhar por qualquer motivo, não trava o resto do
-        // painel — apenas mostra a mensagem de vazio no lugar do gráfico
-        container.style.display = 'none';
-        if (vazio) {
-          vazio.style.display = 'block';
-          vazio.textContent = 'Não foi possível desenhar o gráfico. Recarregue a página e tente novamente.';
-        }
-      }
+      if (container) container.style.display = 'block';
+      desenharBarrasCategoria('gastos',
+        { canvas: 'graficoBarrasCategorias', tabela: 'gastosBarrasTabela', area: 'gastosBarrasArea' },
+        porCategoria,
+        { descricao: 'Gastos de cartão por categoria no mês' });
     }
 
     // ────────────────────────────────────────────────────────────
@@ -4474,8 +4917,7 @@
 
     // Tabela equivalente ao gráfico — todo valor também é legível sem
     // passar o mouse. Textos entram por textContent (nunca innerHTML).
-    function renderizarTabelaGrafico(n, colunas, linhas) {
-      const el = document.getElementById('grafTabela' + n);
+    function preencherTabelaEm(el, colunas, linhas) {
       if (!el) return;
       el.textContent = '';
       const tabela = document.createElement('table');
@@ -4500,6 +4942,10 @@
       });
       tabela.appendChild(tbody);
       el.appendChild(tabela);
+    }
+
+    function renderizarTabelaGrafico(n, colunas, linhas) {
+      preencherTabelaEm(document.getElementById('grafTabela' + n), colunas, linhas);
     }
 
     function definirNotaGrafico(n, partes) {
