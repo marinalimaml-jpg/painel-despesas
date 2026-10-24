@@ -3,211 +3,683 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Acompanhamento de Despesas</title>
+  <title>Desempenho financeiro</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.13.216/legacy/build/pdf.min.js"></script>
   <style>
+    /* ─────────────────────────────────────────────────────────────────────
+       Visual inspirado no template "Data Dashboard": painéis de cantos bem
+       arredondados, títulos em "pílula" azul, KPIs com contorno fino e
+       gráficos em azul. Paleta toda em azul, com a página em azul claro.
+       Um único tema, definido por variáveis.
+       Contrastes conferidos: texto ≥ 4,5:1 em todos os fundos.
+       ───────────────────────────────────────────────────────────────────── */
+    :root {
+      color-scheme: light;
+      --bg: #d8e6fa;
+      --bg-brilho: #eef5ff;
+      --painel: #ffffff;
+      --inset: #f1f6ff;
+      --inset-2: #e4eefc;
+      --cabecalho-2: #cfe0fa;
+      --acento: #2e5fd1;
+      --acento-hover: #234eb5;
+      --sobre-acento: #ffffff;
+      --tinta: #0f2146;
+      --acento-texto: #1f4aa8;
+      --texto: #0f2146;
+      --texto-sec: #34507f;
+      --texto-mudo: #465d8c;
+      --linha: rgba(46, 95, 209, 0.22);
+      --linha-forte: rgba(46, 95, 209, 0.40);
+      --linha-suave: rgba(46, 95, 209, 0.12);
+      --bom: #0b6b32;
+      --mau: #b42323;
+      --aviso: #7a4e00;
+      --bom-fill: #12803f;
+      --mau-fill: #c42b2b;
+      --azul-escuro: #12286a;
+      --azul-escuro-borda: #1d3a8a;
+      --bom-sobre-escuro: #6df0a8;
+      --mau-sobre-escuro: #ff9c9c;
+      --amarelo-claro: #fff3b0;
+      --cinza-claro: #e3e3e1;
+      --sombra: 0 10px 28px rgba(31, 74, 168, 0.14);
+      --raio: 18px;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fafaf9;
-      padding: 20px;
-      color: #0b0b0b;
+      background:
+        radial-gradient(1100px 520px at 88% -8%, var(--bg-brilho) 0%, rgba(238, 245, 255, 0) 70%),
+        radial-gradient(900px 480px at -8% 12%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%),
+        var(--bg);
+      background-attachment: fixed;
+      padding: 24px 20px 40px 20px;
+      color: var(--texto);
+      min-height: 100vh;
     }
-    
+
+    :focus-visible {
+      outline: 2px solid var(--acento);
+      outline-offset: 2px;
+    }
+
+    code {
+      background: rgba(46, 95, 209, 0.12);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+
     .container {
       max-width: 1400px;
       margin: 0 auto;
     }
-    
-    h1 {
-      font-size: 28px;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    
+
+    /* ── Cabeçalho ── */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 24px;
-    }
-    
-    .subtitle {
-      font-size: 14px;
-      color: #52514e;
+      flex-wrap: wrap;
+      gap: 16px;
       margin-bottom: 24px;
     }
 
-    .mes-destaque {
-      font-size: 22px;
-      font-weight: 700;
-      color: #185fa5;
+    .marca {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .marca-icone {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      margin-top: 2px;
+    }
+
+    .kicker {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--acento-texto);
       margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--texto-sec);
+      margin: 10px 0 4px 0;
     }
 
     .ultima-atualizacao {
       font-size: 11px;
-      color: #898781;
-      margin-bottom: 24px;
+      color: var(--texto-mudo);
+      margin-bottom: 14px;
     }
-    
+
     .mes-selector {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
+      padding: 6px 8px 6px 18px;
+      background: #ffffff;
+      border: 1px solid var(--linha-forte);
+      border-radius: 999px;
     }
-    
-    .mes-selector select {
-      padding: 8px 12px;
-      border: 0.5px solid #e1e0d9;
-      border-radius: 6px;
+
+    .mes-label {
       font-size: 14px;
-      background: white;
-      cursor: pointer;
+      font-weight: 600;
+      color: var(--texto-sec);
     }
-    
+
+    .mes-selector select {
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--acento);
+      color: var(--sobre-acento);
+      cursor: pointer;
+      color-scheme: light;
+    }
+
+    .config-api {
+      display: none;
+      margin-bottom: 20px;
+      padding: 18px;
+      background: var(--painel);
+      border: 1px solid var(--linha);
+      border-radius: var(--raio);
+    }
+
+    .config-api-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .config-api-texto {
+      font-size: 12px;
+      color: var(--texto-sec);
+      margin-bottom: 10px;
+    }
+
+    .config-api-linha {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .config-api-linha input {
+      flex: 1;
+      min-width: 240px;
+      font-size: 13px;
+    }
+
+    /* ── Resumo executivo (KPIs com contorno; Resultado em destaque) ── */
     .resumo-executivo {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       margin-bottom: 32px;
-      padding: 24px;
-      background: #f5f4f1;
-      border-radius: 12px;
-      border: 2px solid #e1e0d9;
+      padding: 22px;
+      background: var(--painel);
+      border-radius: var(--raio);
+      border: 2px solid var(--linha);
+      box-shadow: var(--sombra);
     }
-    
+
     .resumo-executivo.superavit {
-      border-color: #0ca30c;
+      border-color: var(--bom-fill);
     }
-    
+
     .resumo-executivo.deficit {
-      border-color: #d03b3b;
+      border-color: var(--mau-fill);
     }
-    
+
     .card-kpi {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      border: 0.5px solid #e1e0d9;
+      background: var(--inset);
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--linha-forte);
     }
-    
+
     .card-label {
       font-size: 11px;
-      color: #52514e;
+      font-weight: 600;
+      color: var(--texto-sec);
       text-transform: uppercase;
       margin-bottom: 8px;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
-    
+
     .card-valor {
-      font-size: 22px;
-      font-weight: 600;
+      font-size: 24px;
+      font-weight: 700;
     }
-    
+
     .card-valor.positivo {
-      color: #185fa5;
+      color: var(--acento-texto);
     }
-    
+
     .card-valor.negativo {
-      color: #a32d2d;
+      color: var(--mau);
     }
-    
+
     .card-valor.resultado {
-      color: #0ca30c;
+      color: var(--bom);
     }
-    
+
     .card-valor.resultado.deficit {
-      color: #a32d2d;
+      color: var(--mau);
     }
-    
+
+    .card-valor.neutro {
+      color: var(--texto);
+    }
+
+    /* Resultado: cartão em azul escuro (KPI de destaque, como no template).
+       O fundo é sempre o mesmo; o sinal de superávit/déficit continua no
+       valor (verde-claro / vermelho-claro, ambos com contraste alto sobre o
+       azul escuro), no sinal do número e no contorno do bloco de KPIs */
+    .card-kpi.destaque {
+      background: var(--azul-escuro);
+      border-color: var(--azul-escuro-borda);
+    }
+
+    .card-kpi.destaque .card-label {
+      color: #dbe7ff;
+    }
+
+    .card-kpi.destaque .card-valor.resultado {
+      color: var(--bom-sobre-escuro);
+    }
+
+    .card-kpi.destaque .card-valor.resultado.deficit {
+      color: var(--mau-sobre-escuro);
+    }
+
+    /* Regra — Totalizados: cards de Pensão, Terceiros e Reembolso. São
+       valores listados porém FORA do Total de Despesas, por isso cor neutra */
+    .totalizados {
+      margin: -16px 0 32px 0;
+      padding: 18px 24px 22px 24px;
+      background: var(--painel);
+      border-radius: var(--raio);
+      border: 1px solid var(--linha);
+      box-shadow: var(--sombra);
+    }
+
+    .totalizados-titulo {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--texto);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 14px;
+    }
+
+    .totalizados-titulo span {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--texto-mudo);
+    }
+
+    .totalizados-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--texto-mudo);
+      margin-top: 6px;
+    }
+
+    /* Regra — Parcelas Futuras Previstas e Gastos de cartão por categoria
+       ficam um ao lado do outro; empilham quando a tela é estreita. Se um
+       dos dois estiver oculto, o outro ocupa a linha toda. */
+    .duas-colunas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+
+    .duas-colunas > .coluna {
+      flex: 1 1 580px;
+      min-width: 0;
+    }
+
+    .parcelas-box {
+      padding: 18px 20px;
+      background: #fff8e1;
+      border: 1.5px solid #e8c35a;
+      border-radius: 14px;
+    }
+
+    .parcelas-topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .parcelas-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--aviso);
+    }
+
+    .parcelas-total {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--aviso);
+    }
+
+    .parcelas-secao {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--aviso);
+      margin: 14px 0 8px 0;
+    }
+
+    .parcelas-categorias {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .parcela-cat-linha {
+      display: grid;
+      grid-template-columns: 12px minmax(0, 1fr) auto 52px;
+      column-gap: 10px;
+      row-gap: 4px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--aviso);
+    }
+
+    .parcela-cat-cor {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .parcela-cat-nome {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .parcela-cat-valor {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .parcela-cat-pct {
+      text-align: right;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .parcela-cat-barra {
+      grid-column: 2 / -1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(122, 78, 0, 0.14);
+      overflow: hidden;
+    }
+
+    .parcela-cat-barra > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .parcelas-nota {
+      font-size: 11px;
+      color: var(--aviso);
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    .pizza-card {
+      padding: 16px 20px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+    }
+
+    .titulo-bloco {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    /* Bloco E — Gráficos de visão geral. Cada gráfico é um cartão com
+       título, botão "Ver tabela" (todo valor também legível sem passar o
+       mouse), a área do gráfico e uma nota de leitura. O gráfico 3 ocupa a
+       linha toda; os dois primeiros ficam lado a lado e empilham em tela
+       estreita. */
+    .secao-titulo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .secao-titulo h2 {
+      margin-bottom: 0;
+    }
+
+    .btn-pequeno {
+      padding: 6px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* o botão que fica dentro do título lavanda usa texto escuro (contraste) */
+    h2.secao-titulo button.secondary {
+      color: var(--sobre-acento);
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.65);
+    }
+
+    h2.secao-titulo button.secondary:hover {
+      background: rgba(255, 255, 255, 0.32);
+    }
+
+    .graficos-grade {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 20px;
+    }
+
+    .grafico-card {
+      min-width: 0;
+      padding: 18px 20px 16px 20px;
+      border: 1px solid var(--linha);
+      border-radius: 16px;
+      background: var(--inset);
+    }
+
+    .grafico-card.larga {
+      grid-column: 1 / -1;
+    }
+
+    .grafico-cabecalho {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .grafico-titulo {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .grafico-subtitulo {
+      font-size: 12px;
+      color: var(--texto-sec);
+      margin-top: 2px;
+    }
+
+    .grafico-legenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      margin: 4px 0 8px 0;
+      font-size: 12px;
+      color: var(--texto-sec);
+    }
+
+    .grafico-legenda[hidden] {
+      display: none;
+    }
+
+    .leg-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .leg-chave-barra {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .leg-chave-linha {
+      width: 16px;
+      height: 0;
+      border-top: 2px solid;
+      border-radius: 1px;
+    }
+
+    .leg-chave-ponto {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .grafico-area {
+      position: relative;
+      height: 320px;
+    }
+
+    .grafico-tabela {
+      max-height: 320px;
+      overflow: auto;
+      font-size: 12px;
+    }
+
+    .grafico-tabela table {
+      font-size: 12px;
+    }
+
+    .grafico-tabela th,
+    .grafico-tabela td {
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
+    .grafico-vazio {
+      display: none;
+      text-align: center;
+      color: var(--texto-mudo);
+      font-size: 13px;
+      padding: 48px 16px;
+    }
+
+    .grafico-nota {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--texto-sec);
+    }
+
+    /* ── Seções (painéis azuis arredondados) e títulos em "pílula" lavanda ── */
     section {
       margin-bottom: 32px;
-      background: white;
+      background: var(--painel);
       padding: 24px;
-      border-radius: 12px;
-      border: 0.5px solid #e1e0d9;
+      border-radius: var(--raio);
+      border: 1px solid var(--linha);
+      box-shadow: var(--sombra);
     }
-    
+
     h2 {
+      display: inline-block;
       font-size: 16px;
-      font-weight: 500;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #e1e0d9;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 18px;
+      padding: 9px 18px;
+      background: var(--acento);
+      color: var(--sobre-acento);
+      border-radius: 14px;
     }
-    
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
     }
-    
+
     .input-group {
       display: flex;
       flex-direction: column;
     }
-    
+
     .input-group label {
       font-size: 12px;
-      color: #52514e;
+      color: var(--texto-sec);
       margin-bottom: 6px;
-      font-weight: 500;
+      font-weight: 600;
     }
-    
+
     input[type="number"], input[type="text"], select {
-      padding: 8px;
-      border: 0.5px solid #e1e0d9;
-      border-radius: 6px;
+      padding: 9px 10px;
+      border: 1px solid var(--linha-forte);
+      border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
-      background: white;
+      background: #ffffff;
+      color: var(--texto);
     }
-    
+
     input[type="number"]:focus, input[type="text"]:focus, select:focus {
       outline: none;
-      border-color: #185fa5;
-      box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+      border-color: var(--acento);
+      box-shadow: 0 0 0 3px rgba(46, 95, 209, 0.22);
     }
-    
+
     button {
-      padding: 10px 16px;
-      border: 0.5px solid #e1e0d9;
-      background: #185fa5;
-      color: white;
-      border-radius: 6px;
+      padding: 10px 18px;
+      border: 0;
+      background: var(--acento);
+      color: var(--sobre-acento);
+      border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 700;
       transition: background 0.2s;
     }
-    
+
     button:hover {
-      background: #0f4080;
+      background: var(--acento-hover);
     }
-    
+
     button.secondary {
-      background: #f5f4f1;
-      color: #52514e;
-      border: 0.5px solid #e1e0d9;
+      background: transparent;
+      color: var(--texto);
+      border: 1px solid var(--linha-forte);
+      font-weight: 600;
     }
-    
+
     button.secondary:hover {
-      background: #e1e0d9;
+      background: rgba(46, 95, 209, 0.10);
     }
-    
+
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    
+
     .actions {
       display: flex;
       gap: 12px;
@@ -215,24 +687,130 @@
       flex-wrap: wrap;
       align-items: center;
     }
-    
+
     .file-hint {
       font-size: 11px;
-      color: #898781;
+      color: var(--texto-mudo);
       margin-top: -8px;
       margin-bottom: 8px;
     }
-    
+
     .table-container {
       overflow-x: auto;
       margin-top: 16px;
     }
 
+    /* ── Seções recolhíveis (Cartão, Extrato e Pensão): cabeçalho lavanda
+       clicável com seta e resumo à direita. Só afeta a exibição. ── */
+    section.secao-recolhivel {
+      padding: 14px;
+    }
+
+    .secao-cabecalho,
+    .secao-bloco > .cartao-cabecalho {
+      background: var(--acento);
+      color: var(--sobre-acento);
+      padding: 14px 20px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .secao-cabecalho:hover,
+    .secao-bloco > .cartao-cabecalho:hover {
+      background: var(--acento-hover);
+    }
+
+    .secao-cabecalho .cartao-titulo,
+    .secao-bloco > .cartao-cabecalho .cartao-titulo {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .secao-resumo {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .secao-corpo {
+      padding: 18px 8px 8px 8px;
+    }
+
+    .secao-corpo[hidden] {
+      display: none;
+    }
+
+    .secao-bloco {
+      border: 0;
+      background: transparent;
+      margin-bottom: 0;
+      overflow: visible;
+    }
+
+    .cartao-bloco.secao-bloco > .table-container {
+      margin-top: 14px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+    }
+
+    .vazio-bloco {
+      padding: 24px;
+      text-align: center;
+      color: var(--texto-mudo);
+      font-size: 13px;
+      border: 1.5px dashed var(--linha-forte);
+      border-radius: 14px;
+    }
+
+    .totais-secao {
+      margin-top: 16px;
+      padding: 16px 18px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+    }
+
+    .totais-secao-grade {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .totais-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--texto-sec);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .totais-valor {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .totais-valor.negativo {
+      color: var(--mau);
+    }
+
+    .totais-valor.mudo {
+      color: var(--texto-sec);
+    }
+
     /* Blocos por cartão — separação visual explícita exigida entre cartões */
     .cartao-bloco {
-      border: 1.5px solid #d8d6cd;
-      border-radius: 10px;
-      margin-bottom: 20px;
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+      background: var(--inset);
+      margin-bottom: 16px;
       overflow: hidden;
     }
 
@@ -241,8 +819,8 @@
     }
 
     .cartao-cabecalho {
-      background: #2c2c2a;
-      color: #f0efec;
+      background: var(--cabecalho-2);
+      color: var(--texto);
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
@@ -252,19 +830,19 @@
     }
 
     .cartao-titulo {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 14px;
     }
 
     .chevron {
       display: inline-block;
-      width: 12px;
+      width: 14px;
       font-size: 11px;
     }
 
     .cartao-subtotal {
       font-size: 13px;
-      opacity: 0.9;
+      font-weight: 600;
     }
 
     .fatura-chips {
@@ -272,70 +850,140 @@
       gap: 8px;
       flex-wrap: wrap;
       padding: 10px 16px;
-      background: #f5f4f1;
-      border-bottom: 1px solid #e1e0d9;
+      background: var(--inset-2);
+      border-bottom: 1px solid var(--linha);
     }
 
     .fatura-chip {
-      background: white;
-      border: 1px solid #e1e0d9;
-      border-radius: 6px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 8px;
       padding: 4px 10px;
       font-size: 12px;
-      color: #52514e;
+      color: var(--texto-sec);
     }
 
     .cartao-bloco .table-container {
       margin-top: 0;
     }
-    
+
+    .cartao-total-carregado {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
-    
+
     th {
-      background: #f5f4f1;
+      background: var(--inset-2);
       padding: 12px;
       text-align: left;
-      font-weight: 500;
-      color: #52514e;
-      border-bottom: 1px solid #e1e0d9;
+      font-weight: 600;
+      color: var(--texto-sec);
+      border-bottom: 1px solid var(--linha);
     }
-    
+
     td {
       padding: 12px;
-      border-bottom: 1px solid #e1e0d9;
+      border-bottom: 1px solid var(--linha-suave);
     }
-    
+
     tr:hover {
-      background: #fafaf9;
+      background: rgba(46, 95, 209, 0.07);
     }
-    
+
     tr.auto-classificado {
       background: #fff8e6;
     }
-    
+
     tr.categoria-terceiro {
       opacity: 0.65;
     }
 
+    tr.linha-projetada {
+      background: #e6f0ff;
+      font-style: italic;
+    }
+
+    tr.linha-revisao {
+      background: #fffbf0;
+    }
+
     /* Regra — Destaque Visual de Lançamentos: cores puramente informativas,
        nunca alteram cálculo. Prioridade quando mais de um critério bate:
-       cor da categoria (Terceiro/Reembolso) > última parcela (Regra 4). */
+       cor da categoria (Terceiro/Pensão/Reembolso) > última parcela.
+       Amarelo claro e cinza claro de verdade (com texto escuro), para
+       destacar sobre o fundo azul-marinho. */
     tr.linha-ultima-parcela {
-      background: #dceefc;
+      background: var(--amarelo-claro);
     }
 
-    tr.linha-terceiro {
-      background: #fde8d0;
-      opacity: 0.75;
+    tr.linha-ultima-parcela:hover {
+      background: #ffec8a;
     }
 
+    /* Terceiros, Pensão e Reembolso: mesmo cinza claro — são lançamentos
+       listados, porém fora do cálculo do Total de Despesas */
+    tr.linha-terceiro,
+    tr.linha-pensao,
     tr.linha-reembolso {
-      background: #e3e3e1;
-      opacity: 0.75;
+      background: var(--cinza-claro);
+    }
+
+    tr.linha-terceiro:hover,
+    tr.linha-pensao:hover,
+    tr.linha-reembolso:hover {
+      background: #d3d6dc;
+    }
+
+    tr.linha-ultima-parcela,
+    tr.linha-terceiro,
+    tr.linha-pensao,
+    tr.linha-reembolso {
+      color: var(--tinta);
+      color-scheme: light;
+    }
+
+    tr.linha-ultima-parcela td,
+    tr.linha-terceiro td,
+    tr.linha-pensao td,
+    tr.linha-reembolso td {
+      border-bottom-color: rgba(12, 24, 48, 0.14);
+    }
+
+    tr.linha-ultima-parcela td input,
+    tr.linha-ultima-parcela td select,
+    tr.linha-terceiro td input,
+    tr.linha-terceiro td select,
+    tr.linha-pensao td input,
+    tr.linha-pensao td select,
+    tr.linha-reembolso td input,
+    tr.linha-reembolso td select {
+      background: #ffffff;
+      color: var(--tinta);
+      border-color: rgba(12, 24, 48, 0.35);
+    }
+
+    tr.linha-ultima-parcela .categoria-herdada,
+    tr.linha-terceiro .categoria-herdada,
+    tr.linha-pensao .categoria-herdada,
+    tr.linha-reembolso .categoria-herdada {
+      color: var(--tinta);
+    }
+
+    tr.linha-excluida {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    tr.linha-excluida select,
+    tr.linha-excluida .categoria-herdada {
+      text-decoration: none;
     }
 
     .legenda-cores {
@@ -344,25 +992,12 @@
       flex-wrap: wrap;
       align-items: center;
       font-size: 12px;
-      color: #52514e;
+      color: var(--texto-sec);
       padding: 10px 16px;
-      background: #f5f4f1;
-      border-radius: 8px;
+      background: var(--inset);
+      border: 1px solid var(--linha);
+      border-radius: 12px;
       margin-bottom: 16px;
-    }
-
-    .controle-global {
-      padding: 10px 16px;
-      background: #ececea;
-      border-radius: 8px;
-      margin-bottom: 4px;
-      align-items: center;
-    }
-
-    .controle-global-label {
-      font-size: 12px;
-      color: #52514e;
-      margin-right: 4px;
     }
 
     .legenda-cores-item {
@@ -379,138 +1014,88 @@
       flex-shrink: 0;
     }
 
-    .swatch-azul { background: #dceefc; border: 1px solid #a9cdec; }
-    .swatch-laranja { background: #fde8d0; border: 1px solid #eabf8a; }
-    .swatch-cinza { background: #e3e3e1; border: 1px solid #c3c2be; }
+    .swatch-amarelo { background: var(--amarelo-claro); border: 1px solid #e0cc62; }
+    .swatch-cinza { background: var(--cinza-claro); border: 1px solid #c3c2be; }
 
     .diferenca-pendente {
-      color: #8a6412 !important;
+      color: var(--aviso) !important;
       font-weight: 700;
     }
 
-    tr.linha-projetada {
-      background: #eef4fb;
-      font-style: italic;
+    /* no cabeçalho lavanda o texto âmbar não teria contraste: vira uma pílula */
+    .secao-bloco > .cartao-cabecalho .diferenca-pendente {
+      color: var(--tinta) !important;
+      background: #ffd36b;
+      padding: 3px 12px;
+      border-radius: 999px;
     }
-    
+
     td input, td select {
       width: 100%;
-      padding: 6px;
-      border: 0.5px solid #e1e0d9;
-      border-radius: 4px;
+      padding: 6px 8px;
+      border: 1px solid var(--linha-forte);
+      border-radius: 8px;
       font-size: 12px;
     }
-    
+
     select.select-terceiro {
+      border-color: var(--mau);
+      color: var(--mau);
+      font-weight: 600;
+    }
+
+    tr.linha-ultima-parcela td select.select-terceiro,
+    tr.linha-terceiro td select.select-terceiro,
+    tr.linha-pensao td select.select-terceiro,
+    tr.linha-reembolso td select.select-terceiro {
       border-color: #a32d2d;
       color: #a32d2d;
-      font-weight: 500;
     }
 
     .categoria-herdada {
       display: inline-block;
       padding: 6px 8px;
       font-size: 12px;
-      color: #52514e;
-    }
-    
-    .badge-auto {
-      display: inline-block;
-      background: #fbeecb;
-      color: #8a6412;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: 500;
+      color: var(--texto-sec);
     }
 
-    .badge-projetado {
-      display: inline-block;
-      background: #dbe9fa;
-      color: #185fa5;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: 500;
-    }
-
-    .badge-divergente {
-      display: inline-block;
-      background: #fcebeb;
-      color: #a32d2d;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: 500;
-      cursor: help;
-    }
-
-    .badge-pagamento-fatura {
-      display: inline-block;
-      background: #eaf3de;
-      color: #4a7a1f;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: 500;
-      cursor: help;
-    }
-
-    .badge-revisao {
-      display: inline-block;
-      background: #fbeecb;
-      color: #8a6412;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: 600;
-      cursor: help;
-    }
-
-    tr.linha-revisao {
-      background: #fffbf0;
-    }
-
+    .badge-auto,
+    .badge-projetado,
+    .badge-divergente,
+    .badge-pagamento-fatura,
+    .badge-revisao,
     .badge-excluido {
       display: inline-block;
-      background: #ececea;
-      color: #6b6a66;
       font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
       margin-left: 6px;
       font-weight: 600;
-      cursor: help;
     }
 
-    tr.linha-excluida {
-      opacity: 0.5;
-      text-decoration: line-through;
-    }
+    .badge-auto { background: #fbeecb; color: #7a560f; }
+    .badge-projetado { background: #dbe9fa; color: #185fa5; }
+    .badge-divergente { background: #fcebeb; color: #a32d2d; cursor: help; }
+    .badge-pagamento-fatura { background: #eaf3de; color: #3f6a18; cursor: help; }
+    .badge-revisao { background: #fbeecb; color: #7a560f; cursor: help; }
+    .badge-excluido { background: var(--inset-2); color: var(--texto-mudo); cursor: help; }
 
-    tr.linha-excluida select,
-    tr.linha-excluida .categoria-herdada {
-      text-decoration: none;
-    }
-
-    .cartao-total-carregado {
-      font-size: 11px;
-      opacity: 0.75;
-      margin-top: 2px;
+    /* nas linhas de fundo claro, os selos viram texto escuro sobre tom neutro */
+    tr.linha-ultima-parcela [class^="badge-"],
+    tr.linha-terceiro [class^="badge-"],
+    tr.linha-pensao [class^="badge-"],
+    tr.linha-reembolso [class^="badge-"] {
+      background: rgba(12, 24, 48, 0.12);
+      color: var(--tinta);
     }
 
     .parcela-mes-chip {
-      background: white;
-      border: 1px solid #f0d98c;
-      border-radius: 6px;
+      background: #ffffff;
+      border: 1px solid #e8c35a;
+      border-radius: 8px;
       padding: 6px 12px;
       font-size: 12px;
-      color: #8a6412;
+      color: var(--aviso);
       display: flex;
       gap: 6px;
       align-items: center;
@@ -529,7 +1114,7 @@
     .legenda-item {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-size: 12px;
       min-width: 0;
     }
@@ -550,14 +1135,15 @@
     }
 
     .legenda-valor {
-      color: #52514e;
+      color: var(--texto-sec);
       white-space: nowrap;
+      font-size: 11px;
     }
 
     .legenda-pct {
       font-weight: 600;
       white-space: nowrap;
-      min-width: 40px;
+      min-width: 38px;
       text-align: right;
     }
 
@@ -566,227 +1152,78 @@
         grid-template-columns: 1fr;
       }
     }
-    
+
     .info-box {
-      background: #e6f1fb;
-      border-left: 3px solid #185fa5;
-      padding: 12px;
-      border-radius: 6px;
+      background: rgba(46, 95, 209, 0.10);
+      border-left: 3px solid var(--acento);
+      padding: 12px 14px;
+      border-radius: 10px;
       font-size: 12px;
-      color: #185fa5;
+      color: var(--acento-texto);
       margin-top: 12px;
     }
-    
+
     .info-box.erro {
       background: #fcebeb;
-      border-left-color: #a32d2d;
-      color: #a32d2d;
+      border-left-color: var(--mau);
+      color: var(--mau);
     }
-    
+
     .info-box strong {
-      font-weight: 500;
+      font-weight: 700;
     }
-    
+
     input[type="file"] {
       padding: 8px;
-      border: 0.5px solid #e1e0d9;
-      border-radius: 6px;
+      border: 1px solid var(--linha-forte);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--texto-sec);
     }
-    
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: #1a1a19;
-        color: #f0efec;
-      }
 
-      .mes-destaque {
-        color: #3987e5;
-      }
-      
-      section, .resumo-executivo {
-        background: #2c2c2a;
-        border-color: #383835;
-      }
-      
-      .card-kpi {
-        background: #1a1a19;
-        border-color: #383835;
-      }
-      
-      h2 {
-        border-bottom-color: #383835;
-      }
-      
-      th {
-        background: #383835;
-        color: #c3c2b7;
-      }
-      
-      td {
-        border-color: #383835;
-      }
-      
-      tr:hover {
-        background: #383835;
-      }
-      
-      tr.auto-classificado {
-        background: #3a3212;
-      }
-      
-      .badge-auto {
-        background: #4a3d14;
-        color: #e0bb5a;
-      }
-      
-      input, select, button.secondary {
-        background: #1a1a19;
-        color: #f0efec;
-        border-color: #383835;
-      }
-      
-      select.select-terceiro {
-        border-color: #e57575;
-        color: #e57575;
-      }
-      
-      .mes-selector select {
-        background: #1a1a19;
-        color: #f0efec;
-        border-color: #383835;
-      }
-      
-      .info-box.erro {
-        background: #501313;
-        color: #e57575;
-      }
-
-      .cartao-bloco {
-        border-color: #383835;
-      }
-
-      .cartao-cabecalho {
-        background: #0f0f0e;
-      }
-
-      .fatura-chips {
-        background: #1a1a19;
-        border-bottom-color: #383835;
-      }
-
-      .fatura-chip {
-        background: #2c2c2a;
-        border-color: #383835;
-        color: #c3c2b7;
-      }
-
-      tr.linha-projetada {
-        background: #142433;
-      }
-
-      tr.linha-ultima-parcela {
-        background: #14314d;
-      }
-
-      tr.linha-terceiro {
-        background: #4a3418;
-      }
-
-      tr.linha-reembolso {
-        background: #3a3a37;
-      }
-
-      .legenda-cores {
-        background: #2c2c2a;
-        color: #c3c2b7;
-      }
-
-      .controle-global {
-        background: #2c2c2a;
-      }
-
-      .controle-global-label {
-        color: #c3c2b7;
-      }
-
-      .swatch-azul { background: #14314d; border-color: #2a5a8a; }
-      .swatch-laranja { background: #4a3418; border-color: #8a6a2a; }
-      .swatch-cinza { background: #3a3a37; border-color: #6a6a66; }
-
-      .diferenca-pendente {
-        color: #e0bb5a !important;
-      }
-
-      .categoria-herdada {
-        color: #c3c2b7;
-      }
-
-      .badge-projetado {
-        background: #0f2d4d;
-        color: #6ab0f0;
-      }
-
-      .badge-divergente {
-        background: #501313;
-        color: #e57575;
-      }
-
-      .badge-pagamento-fatura {
-        background: #173404;
-        color: #8fc35e;
-      }
-
-      .badge-revisao {
-        background: #4a3d14;
-        color: #e0bb5a;
-      }
-
-      tr.linha-revisao {
-        background: #3a3212;
-      }
-
-      .badge-excluido {
-        background: #383835;
-        color: #c3c2b7;
-      }
-
-      .legenda-valor {
-        color: #c3c2b7;
-      }
-
-      .parcela-mes-chip {
-        background: #2c2c2a;
-        border-color: #4a3d14;
-        color: #e0bb5a;
-      }
+    @media (max-width: 640px) {
+      body { padding: 16px 12px 32px 12px; }
+      h1 { font-size: 24px; }
+      section { padding: 18px; }
+      .totais-secao-grade { grid-template-columns: 1fr; }
+      .graficos-grade { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <div>
-        <h1>Painel de Acompanhamento de Despesas</h1>
-        <div id="mesDestaque" class="mes-destaque">Setembro/2026</div>
-        <p class="subtitle">Análise financeira mensal da família</p>
-        <p id="ultimaAtualizacao" class="ultima-atualizacao"></p>
-        <button class="secondary" style="padding: 4px 10px; font-size: 11px;" onclick="alternarConfiguracaoApi()">⚙ Planilha compartilhada</button>
+      <div class="marca">
+        <!-- velocímetro decorativo, no estilo do template -->
+        <svg class="marca-icone" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <path d="M8 46 A24 24 0 0 1 56 46" fill="none" style="stroke: var(--acento);" stroke-width="6" stroke-linecap="round"/>
+          <path d="M14 46 A18 18 0 0 1 20 33" fill="none" style="stroke: var(--bom);" stroke-width="3" stroke-linecap="round"/>
+          <line x1="32" y1="46" x2="45" y2="27" style="stroke: var(--texto);" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="32" cy="46" r="4.5" style="fill: var(--acento);"/>
+        </svg>
+        <div>
+          <div class="kicker">Painel financeiro · Família</div>
+          <h1>Desempenho financeiro</h1>
+          <p class="subtitle">Análise financeira mensal da família</p>
+          <p id="ultimaAtualizacao" class="ultima-atualizacao"></p>
+          <button class="secondary" style="padding: 4px 10px; font-size: 11px;" onclick="alternarConfiguracaoApi()">⚙ Planilha compartilhada</button>
+        </div>
       </div>
       <div class="mes-selector">
-        <label for="mesSelecionado" style="font-size: 14px; color: #52514e;">Mês:</label>
+        <label for="mesSelecionado" class="mes-label">Mês:</label>
         <select id="mesSelecionado"></select>
       </div>
     </div>
 
     <div class="info-box erro" id="avisoBanco" style="display: none; margin-bottom: 20px;"></div>
 
-    <div id="configuracaoApiContainer" style="display: none; margin-bottom: 20px; padding: 16px; background: #f5f4f1; border: 1.5px solid #e1e0d9; border-radius: 10px;">
-      <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">🔗 Conectar à planilha compartilhada</div>
-      <div style="font-size: 12px; color: #52514e; margin-bottom: 10px;">
+    <div id="configuracaoApiContainer" class="config-api" style="display: none;">
+      <div class="config-api-titulo">🔗 Conectar à planilha compartilhada</div>
+      <div class="config-api-texto">
         Cole aqui a URL do Google Apps Script (termina em <code>/exec</code>) — a mesma URL configurada por qualquer outra pessoa que use este painel.
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <input type="text" id="urlApiInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex: 1; min-width: 240px; padding: 8px; border: 0.5px solid #e1e0d9; border-radius: 6px; font-size: 13px;" />
+      <div class="config-api-linha">
+        <input type="text" id="urlApiInput" placeholder="https://script.google.com/macros/s/.../exec" />
         <button onclick="configurarUrlApi()">Salvar e conectar</button>
       </div>
     </div>
@@ -813,11 +1250,98 @@
         <div class="card-label">Total Despesas</div>
         <div class="card-valor negativo" id="totalDespesas">R$ 0,00</div>
       </div>
-      <div class="card-kpi">
+      <div class="card-kpi destaque">
         <div class="card-label">Resultado</div>
         <div class="card-valor resultado" id="resultado">R$ 0,00</div>
       </div>
     </div>
+
+    <!-- Regra — Totalizados: Pensão, Terceiros e Reembolso (cartão + extrato).
+         Valores listados no mês, porém fora do Total de Despesas -->
+    <div class="totalizados" id="totalizados">
+      <div class="totalizados-titulo">Totalizados <span>(cartão + extrato — fora do Total de Despesas)</span></div>
+      <div class="totalizados-grid">
+        <div class="card-kpi">
+          <div class="card-label">Total Pago c/ Pensão</div>
+          <div class="card-valor neutro" id="totalizadoPensao">R$ 0,00</div>
+          <div class="card-sub" id="totalizadoPensaoDetalhe"></div>
+        </div>
+        <div class="card-kpi">
+          <div class="card-label">Total Terceiros</div>
+          <div class="card-valor neutro" id="totalizadoTerceiros">R$ 0,00</div>
+          <div class="card-sub" id="totalizadoTerceirosDetalhe"></div>
+        </div>
+        <div class="card-kpi">
+          <div class="card-label">Total Reembolso</div>
+          <div class="card-valor neutro" id="totalizadoReembolso">R$ 0,00</div>
+          <div class="card-sub" id="totalizadoReembolsoDetalhe"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloco E — Gráficos de visão geral (1 e 2 lado a lado; 3 em linha inteira) -->
+    <section id="secaoGraficos">
+      <h2 class="secao-titulo">
+        <span>📊 Gráficos</span>
+        <button type="button" class="secondary btn-pequeno" id="btnRecolherGraficos" onclick="alternarGraficos()">Recolher</button>
+      </h2>
+      <div id="graficosCorpo">
+        <div class="graficos-grade">
+
+          <div class="grafico-card" id="grafCard1">
+            <div class="grafico-cabecalho">
+              <div>
+                <div class="grafico-titulo">Receita × Despesas por mês</div>
+                <div class="grafico-subtitulo">Valores em R$ · mesma base dos cards do topo · faixa suave = mês aberto no painel</div>
+              </div>
+              <button type="button" class="secondary btn-pequeno" id="btnTabela1" onclick="alternarTabelaGrafico(1)">Ver tabela</button>
+            </div>
+            <div class="grafico-legenda" id="grafLegenda1"></div>
+            <div class="grafico-area" id="grafArea1">
+              <canvas id="grafReceitaDespesas" role="img" aria-label="Gráfico de barras com a receita e as despesas de cada mês e uma linha com o resultado. Use o botão Ver tabela para ler os valores."></canvas>
+            </div>
+            <div class="grafico-tabela" id="grafTabela1" hidden></div>
+            <div class="grafico-vazio" id="grafVazio1"></div>
+            <div class="grafico-nota" id="grafNota1"></div>
+          </div>
+
+          <div class="grafico-card" id="grafCard2">
+            <div class="grafico-cabecalho">
+              <div>
+                <div class="grafico-titulo">Projeção dos próximos meses</div>
+                <div class="grafico-subtitulo">Receita × despesas fixas + parcelas já comprometidas (sem Terceiros, Pensão e Reembolso)</div>
+              </div>
+              <button type="button" class="secondary btn-pequeno" id="btnTabela2" onclick="alternarTabelaGrafico(2)">Ver tabela</button>
+            </div>
+            <div class="grafico-legenda" id="grafLegenda2"></div>
+            <div class="grafico-area" id="grafArea2">
+              <canvas id="grafProjecao" role="img" aria-label="Gráfico com as despesas fixas e as parcelas já comprometidas dos próximos meses, empilhadas, contra uma linha de receita. Use o botão Ver tabela para ler os valores."></canvas>
+            </div>
+            <div class="grafico-tabela" id="grafTabela2" hidden></div>
+            <div class="grafico-vazio" id="grafVazio2"></div>
+            <div class="grafico-nota" id="grafNota2"></div>
+          </div>
+
+          <div class="grafico-card larga" id="grafCard3">
+            <div class="grafico-cabecalho">
+              <div>
+                <div class="grafico-titulo" id="grafTitulo3">Ritmo de gasto no mês</div>
+                <div class="grafico-subtitulo">Despesas acumuladas dia a dia contra a receita do mês · valores em R$</div>
+              </div>
+              <button type="button" class="secondary btn-pequeno" id="btnTabela3" onclick="alternarTabelaGrafico(3)">Ver tabela</button>
+            </div>
+            <div class="grafico-legenda" id="grafLegenda3"></div>
+            <div class="grafico-area" id="grafArea3">
+              <canvas id="grafRitmo" role="img" aria-label="Gráfico de linha com as despesas acumuladas dia a dia no mês contra a linha da receita. Use o botão Ver tabela para ler os valores."></canvas>
+            </div>
+            <div class="grafico-tabela" id="grafTabela3" hidden></div>
+            <div class="grafico-vazio" id="grafVazio3"></div>
+            <div class="grafico-nota" id="grafNota3"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
 
     <!-- Receitas -->
     <section>
@@ -897,38 +1421,30 @@
       </div>
     </section>
 
-    <!-- Regra — Padronização do Recolhimento dos Blocos: ação global que
-         recolhe/expande Cartão + Extrato + Pensão de uma só vez, além do
-         controle individual que cada bloco já tem no próprio cabeçalho -->
-    <div class="actions controle-global">
-      <span class="controle-global-label">Todos os blocos (Cartão + Extrato + Pensão):</span>
-      <button class="secondary" onclick="recolherTudo()">Recolher tudo</button>
-      <button class="secondary" onclick="expandirTudo()">Expandir tudo</button>
-    </div>
-
-    <!-- Despesas de Cartão -->
-    <section>
-      <h2>Despesas de Cartão de Crédito</h2>
-
-      <div class="actions">
-        <button class="secondary" onclick="recolherTodosCartoes()">Recolher todos</button>
-        <button class="secondary" onclick="expandirTodosCartoes()">Expandir todos</button>
+    <!-- Despesas de Cartão — Regra 3: a seção inteira recolhe/expande pelo
+         cabeçalho, no mesmo padrão da Pensão (e começa recolhida) -->
+    <section class="secao-recolhivel" id="secaoCartao">
+      <div class="secao-cabecalho" id="cabecalhoSecaoCartao" role="button" tabindex="0" aria-expanded="false" aria-controls="corpoSecaoCartao">
+        <span class="cartao-titulo"><span class="chevron" id="chevronSecaoCartao">▶</span> 💳 Cartão de Crédito</span>
+        <span class="secao-resumo" id="resumoSecaoCartao"></span>
       </div>
+      <div class="secao-corpo" id="corpoSecaoCartao" hidden>
 
       <div class="legenda-cores">
-        <span class="legenda-cores-item"><span class="swatch swatch-azul"></span> Última parcela</span>
-        <span class="legenda-cores-item"><span class="swatch swatch-laranja"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-amarelo"></span> Última parcela</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Pensão (fora do total)</span>
         <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Reembolso (fora do total)</span>
       </div>
 
       <div class="actions">
         <div class="input-group" style="flex-direction: row; gap: 8px; align-items: center;">
           <label for="arquivoUpload" style="margin: 0;">Importar Fatura(s) Itaú:</label>
-          <input type="file" id="arquivoUpload" accept=".csv,.xls,.xlsx" multiple />
+          <input type="file" id="arquivoUpload" accept=".csv,.xls,.xlsx,.pdf" multiple />
         </div>
         <button id="btnImportar" onclick="importarArquivo()">Carregar arquivo(s)</button>
       </div>
-      <div class="file-hint">Aceita .csv, .xls ou .xlsx — selecione mais de um arquivo de uma vez (ex: fatura da Marina + fatura da Regilene) para carregar todos juntos no mesmo mês. Fatura pode ser parcial ou completa. Categorização e reconhecimento de itens de meses anteriores são feitos automaticamente.</div>
+      <div class="file-hint">Aceita planilha (.csv, .xls, .xlsx) ou PDF — selecione mais de um arquivo de uma vez (ex: fatura da Marina + fatura da Regilene) para carregar todos juntos no mesmo mês. Fatura pode ser parcial ou completa. Importe cada fatura em UM formato só (planilha OU PDF), para não duplicar lançamentos. Categorização e reconhecimento de itens de meses anteriores são feitos automaticamente.</div>
       
       <div class="info-box" id="csvStatus" style="display: none;">
         <strong>Status:</strong> <span id="csvStatusText"></span>
@@ -936,51 +1452,63 @@
 
       <div id="cartaoPorCartaoContainer"></div>
 
-      <div style="margin-top: 16px; padding: 16px; background: #f5f4f1; border-radius: 8px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="totais-secao">
+        <div class="totais-secao-grade">
           <div>
-            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Cartão (Família)</div>
-            <div style="font-size: 18px; font-weight: 600; color: #a32d2d;" id="totalCartaoPropio">R$ 0,00</div>
+            <div class="totais-label">Total Cartão (Família)</div>
+            <div class="totais-valor negativo" id="totalCartaoPropio">R$ 0,00</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Terceiros/Pensão (Excluído)</div>
-            <div style="font-size: 18px; font-weight: 600; color: #898781;" id="totalCartaoTerceiro">R$ 0,00</div>
+            <div class="totais-label">Total fora do cálculo (Terceiros/Pensão/Reembolso)</div>
+            <div class="totais-valor mudo" id="totalCartaoTerceiro">R$ 0,00</div>
           </div>
         </div>
       </div>
 
-      <!-- Regra 11 — indicador consolidado de parcelas futuras previstas -->
-      <div id="parcelasFuturasContainer" style="display: none; margin-top: 20px; padding: 16px 20px; background: #fff8e6; border: 1.5px solid #f0d98c; border-radius: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-          <div style="font-size: 13px; font-weight: 600; color: #8a6412;">📅 Parcelas Futuras Previstas</div>
-          <div style="font-size: 20px; font-weight: 700; color: #8a6412;" id="parcelasFuturasTotal">R$ 0,00</div>
+      <!-- Regras 11 e do gráfico — Parcelas Futuras Previstas e Gastos de cartão
+           por categoria (realizado) ficam um ao lado do outro -->
+      <div class="duas-colunas">
+        <div class="coluna">
+          <div id="parcelasFuturasContainer" class="parcelas-box" style="display: none;">
+            <div class="parcelas-topo">
+              <div class="parcelas-titulo">📅 Parcelas Futuras Previstas</div>
+              <div class="parcelas-total" id="parcelasFuturasTotal">R$ 0,00</div>
+            </div>
+            <div class="parcelas-secao">Por categoria</div>
+            <div id="parcelasFuturasPorCategoria" class="parcelas-categorias" role="list"></div>
+            <div class="parcelas-secao">Por mês</div>
+            <div id="parcelasFuturasPorMes" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            <div class="parcelas-nota">Não inclui lançamentos de Terceiros, Pensão e Reembolso.</div>
+          </div>
         </div>
-        <div id="parcelasFuturasPorMes" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
-      </div>
 
-      <div id="graficoPizzaContainer" style="margin-top: 24px; display: none;">
-        <h2 style="font-size: 14px; margin-bottom: 12px;">Gastos de cartão por categoria (realizado)</h2>
-        <div style="max-width: 380px; margin: 0 auto;">
-          <canvas id="graficoPizzaCategorias"></canvas>
+        <div class="coluna">
+          <div id="graficoPizzaContainer" class="pizza-card" style="display: none;">
+            <h3 class="titulo-bloco">Gastos de cartão por categoria (realizado)</h3>
+            <div style="max-width: 380px; margin: 0 auto;">
+              <canvas id="graficoPizzaCategorias"></canvas>
+            </div>
+            <div id="graficoPizzaLegenda" class="legenda-pizza"></div>
+          </div>
+          <div id="graficoPizzaVazio" class="vazio-bloco" style="display: none;">
+            Nenhuma despesa de cartão considerada no cálculo deste mês ainda.
+          </div>
         </div>
-        <div id="graficoPizzaLegenda" class="legenda-pizza"></div>
       </div>
-      <div id="graficoPizzaVazio" style="display: none; text-align: center; color: #898781; font-size: 13px; padding: 16px;">
-        Nenhuma despesa de cartão considerada no cálculo deste mês ainda.
       </div>
     </section>
 
-    <!-- Extrato da Conta Corrente -->
-    <section>
-      <h2>Extrato da Conta Corrente</h2>
-
-      <div class="actions">
-        <button class="secondary" onclick="recolherTodosExtrato()">Recolher todos</button>
-        <button class="secondary" onclick="expandirTodosExtrato()">Expandir todos</button>
+    <!-- Extrato da Conta Corrente — Regra 3: seção recolhível como a Pensão -->
+    <section class="secao-recolhivel" id="secaoExtrato">
+      <div class="secao-cabecalho" id="cabecalhoSecaoExtrato" role="button" tabindex="0" aria-expanded="false" aria-controls="corpoSecaoExtrato">
+        <span class="cartao-titulo"><span class="chevron" id="chevronSecaoExtrato">▶</span> 🏦 Extrato da Conta Corrente</span>
+        <span class="secao-resumo" id="resumoSecaoExtrato"></span>
       </div>
+      <div class="secao-corpo" id="corpoSecaoExtrato" hidden>
 
       <div class="legenda-cores">
-        <span class="legenda-cores-item"><span class="swatch swatch-laranja"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Terceiros (fora do total)</span>
+        <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Pensão (fora do total)</span>
         <span class="legenda-cores-item"><span class="swatch swatch-cinza"></span> Reembolso (fora do total)</span>
       </div>
       <div class="actions">
@@ -990,7 +1518,7 @@
         </div>
         <button onclick="importarArquivoExtrato()">Carregar extrato(s)</button>
       </div>
-      <div class="file-hint">Aceita .csv, .xls, .xlsx ou .pdf (extrato do Itaú). Considera apenas lançamentos de débito (PIX, TED, débito automático, boleto, compras no débito). Pagamentos de fatura de cartão identificados no extrato ficam visíveis mas não somam ao Total de Despesas, para não duplicar o que a própria fatura já conta.</div>
+      <div class="file-hint">Aceita planilha (.csv, .xls, .xlsx) ou PDF (extrato do Itaú). Considera apenas lançamentos de débito (PIX, TED, débito automático, boleto, compras no débito). Pagamentos de fatura de cartão identificados no extrato ficam visíveis mas não somam ao Total de Despesas, para não duplicar o que a própria fatura já conta.</div>
 
       <div class="info-box" id="extratoStatus" style="display: none;">
         <strong>Status:</strong> <span id="extratoStatusText"></span>
@@ -998,23 +1526,23 @@
 
       <div id="extratoPorContaContainer"></div>
 
-      <div style="margin-top: 16px; padding: 16px; background: #f5f4f1; border-radius: 8px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="totais-secao">
+        <div class="totais-secao-grade">
           <div>
-            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Extrato (Família)</div>
-            <div style="font-size: 18px; font-weight: 600; color: #a32d2d;" id="totalExtratoConsiderado">R$ 0,00</div>
+            <div class="totais-label">Total Extrato (Família)</div>
+            <div class="totais-valor negativo" id="totalExtratoConsiderado">R$ 0,00</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: #52514e; text-transform: uppercase;">Total Excluído (Terceiro/Pensão/Pagto. Fatura)</div>
-            <div style="font-size: 18px; font-weight: 600; color: #898781;" id="totalExtratoExcluido">R$ 0,00</div>
+            <div class="totais-label">Total Excluído (Terceiro/Pensão/Pagto. Fatura)</div>
+            <div class="totais-valor mudo" id="totalExtratoExcluido">R$ 0,00</div>
           </div>
         </div>
       </div>
+      </div>
     </section>
 
-    <!-- Pensão -->
-    <section>
-      <h2>Pensão</h2>
+    <!-- Pensão (o cabeçalho recolhível do bloco já é o título da seção) -->
+    <section class="secao-recolhivel">
       <div id="pensaoContainer"></div>
     </section>
   </div>
@@ -1059,17 +1587,6 @@
       return `${NOMES_MESES_PT[mes - 1]} ${ano}`;
     }
 
-    // Regra — Destaque do Mês em Análise: formato "Mês/Ano" (ex: "Setembro/2026")
-    function nomeMesDestaque(mesChave) {
-      const [ano, mes] = mesChave.split('-').map(Number);
-      return `${NOMES_MESES_PT[mes - 1]}/${ano}`;
-    }
-
-    function atualizarDestaqueMes() {
-      const el = document.getElementById('mesDestaque');
-      if (el) el.textContent = nomeMesDestaque(mesSelecionado);
-    }
-
     // Soma "n" meses a uma chave de mês ("2026-09" + 1 -> "2026-10").
     // Retorna null se sair do intervalo suportado (MESES_DISPONIVEIS).
     function somarMeses(mesChave, n) {
@@ -1093,7 +1610,7 @@
     // Categorias fixas disponíveis para classificação da fatura
     const categoriasDisponiveis = [
       'Alimentação', 'Ifood', 'Supermercado', 'Farmácia', 'Saúde', 'Combustível', 'Carro', 'Uber',
-      'Compras', 'Assinaturas', 'Lazer', 'Educação', 'Serviços', 'Pet', 'Casa', 'Viagem',
+      'Compras', 'Roupas', 'Assinaturas', 'Lazer', 'Educação', 'Serviços', 'Pet', 'Casa', 'Viagem',
       'Reembolso', 'Outros', 'Pensão', 'Terceiro', 'Pagamento de Fatura'
     ];
 
@@ -1125,7 +1642,10 @@
       { categoria: 'Carro', padroes: ['estacionamento', 'pedagio', 'sem parar', 'conectcar', 'oficina', 'auto pecas', 'pneu', 'lava rapido', 'lavajato'] },
       { categoria: 'Uber', padroes: ['uber', '99app', '99 tecnologia', 'cabify', 'indriver'] },
       { categoria: 'Assinaturas', padroes: ['netflix', 'spotify', 'amazon prime', 'prime video', 'disney', 'hbo', 'max ', 'youtube premium', 'globoplay', 'apple.com', 'icloud', 'deezer', 'paramount', 'canva'] },
-      { categoria: 'Compras', padroes: ['magazine luiza', 'magalu', 'amazon', 'mercado livre', 'mercadolivre', 'shopee', 'aliexpress', 'shein', 'renner', 'riachuelo', 'centauro', 'americanas', 'casas bahia', 'zara', 'cea '] },
+      // "Roupas" vem ANTES de "Compras" para que lojas de moda (Renner, Zara,
+      // Shein...) caiam aqui e não na categoria genérica
+      { categoria: 'Roupas', padroes: ['renner', 'riachuelo', 'zara', 'cea ', 'shein', 'hering', 'lojas marisa', 'dafiti', 'pernambucanas', 'farm rio', 'arezzo', 'schutz', 'havaianas', 'lingerie', 'boutique', 'roupa', 'vestuario', 'confeccoes', 'calcados'] },
+      { categoria: 'Compras', padroes: ['magazine luiza', 'magalu', 'amazon', 'mercado livre', 'mercadolivre', 'shopee', 'aliexpress', 'centauro', 'americanas', 'casas bahia'] },
       { categoria: 'Lazer', padroes: ['cinema', 'ingresso', 'ingresso.com', 'sympla', 'show', 'teatro', 'parque', 'steam', 'playstation', 'xbox'] },
       { categoria: 'Educação', padroes: ['livraria', 'curso', 'udemy', 'faculdade', 'escola', 'colegio', 'alura'] },
       { categoria: 'Serviços', padroes: ['salao', 'barbearia', 'lavanderia', 'estetica', 'academia', 'smart fit', 'fitness'] },
@@ -1149,6 +1669,10 @@
         cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = true;
       });
       cartoesRecolhidos['pensao'] = true;
+      // Regra 3 — as seções inteiras de Cartão e Extrato começam recolhidas,
+      // como a Pensão (o resumo de cada uma continua visível no cabeçalho)
+      SECOES_RECOLHIVEIS.forEach(sec => { cartoesRecolhidos[sec.chave] = true; });
+      aplicarEstadoSecoes();
     }
 
     // Busca TODOS os dados já salvos na planilha compartilhada, de uma vez,
@@ -1201,11 +1725,10 @@
       const agora = new Date().toISOString();
 
       if (!urlApi) {
-        // Sem planilha configurada: mantém em memória só para esta sessão,
-        // mas deixa claro que não foi salvo de verdade
+        // Sem planilha configurada: mantém em memória só para esta sessão
+        // (sem aviso na tela, a pedido)
         ultimaAtualizacaoPorMes[mesChave] = agora;
         atualizarIndicadorUltimaAtualizacao();
-        mostrarAvisoBanco('Nenhuma planilha compartilhada configurada — os dados só existem nesta sessão e serão perdidos ao fechar a página. Configure a URL do Apps Script no topo do painel.', true);
         return;
       }
 
@@ -1364,10 +1887,10 @@
     async function init() {
       const inputUrl = document.getElementById('urlApiInput');
       if (inputUrl) inputUrl.value = urlApi;
+      ligarCabecalhosDasSecoes();
 
       if (!urlApi) {
         document.getElementById('configuracaoApiContainer').style.display = 'block';
-        mostrarAvisoBanco('Configure a URL da planilha compartilhada (Google Apps Script) acima para carregar e salvar os dados. Enquanto isso, o painel funciona só nesta sessão, sem salvar nada.', true);
       } else {
         await carregarDadosCompartilhados();
       }
@@ -1385,7 +1908,6 @@
       renderizarExtrato();
       renderizarPensao();
       atualizarResumo();
-      atualizarDestaqueMes();
       atualizarIndicadorUltimaAtualizacao();
       
       document.getElementById('mesSelecionado').addEventListener('change', (e) => {
@@ -1398,7 +1920,6 @@
         renderizarExtrato();
         renderizarPensao();
         atualizarResumo();
-        atualizarDestaqueMes();
         atualizarIndicadorUltimaAtualizacao();
       });
 
@@ -1598,7 +2119,7 @@
 
       for (const mes of meses) {
         const itens = despesasCartao[mes] || [];
-        const match = itens.find(item => normalizarDescricao(item.descricao) === chave);
+        const match = itens.find(item => !item.precisaRevisao && normalizarDescricao(item.descricao) === chave);
         if (match) {
           return { categoria: match.categoria };
         }
@@ -1648,11 +2169,13 @@
 
     // Regra — Destaque Visual de Lançamentos: decide a classe CSS de cor de
     // uma linha, com prioridade quando mais de um critério bate — a cor da
-    // categoria (Terceiro/Reembolso) sempre prevalece sobre a de última
-    // parcela, por ser a informação que afeta o cálculo (Regra 4). Nenhuma
-    // dessas classes altera subtotal, total ou gráfico — são só visuais.
+    // categoria (Terceiro/Pensão/Reembolso: cinza claro) sempre prevalece
+    // sobre a de última parcela (amarelo claro), por ser a informação que
+    // afeta o cálculo. Nenhuma dessas classes altera subtotal, total ou
+    // gráfico — são só visuais.
     function classeDestaqueLinha(item) {
       if (item.categoria === 'Terceiro') return 'linha-terceiro';
+      if (item.categoria === 'Pensão') return 'linha-pensao';
       if (item.categoria === 'Reembolso') return 'linha-reembolso';
       if (!categoriaContaNoCalculo(item.categoria)) return 'categoria-terceiro';
       const p = parseParcela(item.parcela);
@@ -1672,8 +2195,16 @@
     // correspondentes. Cada projeção herda cartão, descrição, valor da
     // parcela e categoria do lançamento de origem (Regra 8).
     function calcularProjecoes() {
-      const porMes = {};
-      Object.keys(despesasCartao).forEach(mesOrigem => {
+      // Uma mesma compra parcelada aparece em várias faturas seguidas (ex:
+      // "3/12" em Setembro e "4/12" em Outubro) e cada uma delas projetaria
+      // as MESMAS parcelas futuras — somar tudo contaria cada parcela em
+      // dobro (ou em triplo, a cada nova fatura). Por isso as projeções são
+      // agrupadas por (mês alvo + compra + parcela alvo + valor) e só uma
+      // por grupo vale: a quantidade vem da fatura de origem que tem mais
+      // ocorrências (duas compras idênticas na MESMA fatura continuam
+      // sendo duas) e os dados (categoria, valor) vêm da fatura mais recente.
+      const grupos = {};
+      Object.keys(despesasCartao).sort().forEach(mesOrigem => {
         (despesasCartao[mesOrigem] || []).forEach(item => {
           if (item.projetado) return; // nunca projeta a partir de uma projeção
           const p = parseParcela(item.parcela);
@@ -1682,8 +2213,11 @@
           for (let n = p.atual + 1; n <= p.total; n++) {
             const mesAlvo = somarMeses(mesOrigem, n - p.atual);
             if (!mesAlvo) continue; // além do intervalo de meses suportado
-            if (!porMes[mesAlvo]) porMes[mesAlvo] = [];
-            porMes[mesAlvo].push({
+            const chaveOrigem = chaveParcelaOrigem(item.descricao, item.cartao);
+            const chaveGrupo = `${mesAlvo}|${chaveOrigem}|${n}/${p.total}|${Number(item.valor).toFixed(2)}`;
+            if (!grupos[chaveGrupo]) grupos[chaveGrupo] = { mesAlvo, origens: {} };
+            if (!grupos[chaveGrupo].origens[mesOrigem]) grupos[chaveGrupo].origens[mesOrigem] = [];
+            grupos[chaveGrupo].origens[mesOrigem].push({
               data: '',
               descricao: item.descricao,
               valor: item.valor,
@@ -1694,10 +2228,22 @@
               numeroCartao: item.numeroCartao,
               autoClassificado: false,
               projetado: true,
-              chaveOrigem: chaveParcelaOrigem(item.descricao, item.cartao)
+              chaveOrigem
             });
           }
         });
+      });
+
+      const porMes = {};
+      Object.keys(grupos).forEach(chaveGrupo => {
+        const { mesAlvo, origens } = grupos[chaveGrupo];
+        const mesesOrigem = Object.keys(origens).sort();
+        const maisRecente = origens[mesesOrigem[mesesOrigem.length - 1]];
+        const quantidade = Math.max(...mesesOrigem.map(m => origens[m].length));
+        if (!porMes[mesAlvo]) porMes[mesAlvo] = [];
+        for (let i = 0; i < quantidade; i++) {
+          porMes[mesAlvo].push(maisRecente[i] || maisRecente[0]);
+        }
       });
       return porMes;
     }
@@ -1724,22 +2270,39 @@
 
     // Regra 11 — total consolidado de todas as parcelas futuras ainda
     // pendentes (em todos os meses à frente), com a abertura por mês
+    // Regra — Parcelas Futuras Previstas NÃO incluem as categorias Terceiros,
+    // Pensão e Reembolso (listadas porém fora do cálculo). A exclusão é
+    // explícita aqui, além de já decorrer da regra geral de categorias
+    // fora do cálculo, para não depender de mudanças futuras naquela lista.
+    const CATEGORIAS_FORA_DAS_PARCELAS_FUTURAS = ['Terceiro', 'Pensão', 'Reembolso'];
+
+    //
+    // Além da abertura por mês, devolve a abertura por CATEGORIA (porCategoria:
+    // { categoria: valor }). As duas aberturas partem da MESMA lista de
+    // parcelas já filtrada, então a soma de cada uma é sempre igual ao total.
     function calcularTotalParcelasFuturas() {
       const todasProjecoes = calcularProjecoes();
       const porMes = {};
+      const porCategoria = {};
       let totalGeral = 0;
 
       Object.keys(todasProjecoes).forEach(mes => {
         const validos = obterItensComProjecoes(mes)
-          .filter(i => i.projetado && categoriaContaNoCalculo(i.categoria));
+          .filter(i => i.projetado
+            && categoriaContaNoCalculo(i.categoria)
+            && !CATEGORIAS_FORA_DAS_PARCELAS_FUTURAS.includes(i.categoria));
         const soma = validos.reduce((s, i) => s + i.valor, 0);
         if (soma > 0) {
           porMes[mes] = soma;
           totalGeral += soma;
+          validos.forEach(i => {
+            const cat = i.categoria || 'Outros';
+            porCategoria[cat] = (porCategoria[cat] || 0) + i.valor;
+          });
         }
       });
 
-      return { totalGeral, porMes };
+      return { totalGeral, porMes, porCategoria };
     }
 
     // ────────────────────────────────────────────────────────────
@@ -2161,6 +2724,36 @@
       }
     }
 
+    // Regra — Totalizados: soma, no mês selecionado, os lançamentos de uma
+    // categoria em TODAS as origens — cartão (o que está listado no mês,
+    // incluindo parcelas projetadas) e extrato (menos os excluídos
+    // manualmente). Usado pelos cards Pensão/Terceiros/Reembolso e pelo
+    // bloco de Pensão, para os números nunca divergirem entre si.
+    function totalPorCategoriaNoMes(categoria) {
+      const cartao = obterItensComProjecoes(mesSelecionado)
+        .filter(i => i.categoria === categoria)
+        .reduce((s, i) => s + (i.valor || 0), 0);
+      const extrato = (extratoConta[mesSelecionado] || [])
+        .filter(i => i.categoria === categoria && !i.excluido)
+        .reduce((s, i) => s + (i.valor || 0), 0);
+      return { cartao, extrato, total: cartao + extrato };
+    }
+
+    function atualizarTotalizados() {
+      const definicoes = [
+        ['Pensão', 'totalizadoPensao', 'totalizadoPensaoDetalhe'],
+        ['Terceiro', 'totalizadoTerceiros', 'totalizadoTerceirosDetalhe'],
+        ['Reembolso', 'totalizadoReembolso', 'totalizadoReembolsoDetalhe']
+      ];
+      definicoes.forEach(([categoria, idValor, idDetalhe]) => {
+        const { cartao, extrato, total } = totalPorCategoriaNoMes(categoria);
+        const elValor = document.getElementById(idValor);
+        const elDetalhe = document.getElementById(idDetalhe);
+        if (elValor) elValor.textContent = formatCurrency(total);
+        if (elDetalhe) elDetalhe.textContent = `Cartão ${formatCurrency(cartao)} · Extrato ${formatCurrency(extrato)}`;
+      });
+    }
+
     // Regra 1 (Bloco de Pensão) — mesmo padrão visual/recolhível dos blocos
     // de cartão e extrato. Nada aqui compõe o Total de Despesas: os
     // lançamentos categorizados como Pensão já ficam fora do cálculo desde
@@ -2177,9 +2770,9 @@
 
       if (!container.querySelector('.cartao-bloco')) {
         const bloco = document.createElement('div');
-        bloco.className = 'cartao-bloco';
+        bloco.className = 'cartao-bloco secao-bloco';
         bloco.innerHTML = `
-          <div class="cartao-cabecalho" style="cursor: pointer;">
+          <div class="cartao-cabecalho" style="cursor: pointer;" role="button" tabindex="0" aria-controls="pensaoTableContainer">
             <span class="cartao-titulo"><span class="chevron" id="pensaoChevron">▼</span> 🧾 Pensão</span>
             <div style="text-align: right;">
               <div class="cartao-subtotal" id="pensaoDiferencaCabecalho">Resultado: R$ 0,00</div>
@@ -2209,7 +2802,16 @@
           </div>
         `;
         container.appendChild(bloco);
-        bloco.querySelector('.cartao-cabecalho').addEventListener('click', () => alternarCartao('pensao', renderizarPensao));
+        const cabecalhoPensao = bloco.querySelector('.cartao-cabecalho');
+        cabecalhoPensao.addEventListener('click', () => alternarCartao('pensao', renderizarPensao));
+        if (cabecalhoPensao.addEventListener) {
+          cabecalhoPensao.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              alternarCartao('pensao', renderizarPensao);
+            }
+          });
+        }
         document.getElementById('pensaoDevida').addEventListener('input', () => {
           salvarDados();
           atualizarValoresPensao();
@@ -2219,6 +2821,8 @@
       const recolhido = !!cartoesRecolhidos['pensao'];
       document.getElementById('pensaoTableContainer').style.display = recolhido ? 'none' : '';
       document.getElementById('pensaoChevron').textContent = recolhido ? '▶' : '▼';
+      const cabecalhoAtual = container.querySelector('.cartao-cabecalho');
+      if (cabecalhoAtual && cabecalhoAtual.setAttribute) cabecalhoAtual.setAttribute('aria-expanded', String(!recolhido));
 
       atualizarValoresPensao();
     }
@@ -2233,9 +2837,7 @@
       const dados = dadosMeses[mesSelecionado] || {};
       const totalDevido = dados.pensaoDevida || 0;
 
-      const itensCartaoPensao = (despesasCartao[mesSelecionado] || []).filter(i => i.categoria === 'Pensão');
-      const itensExtratoPensao = (extratoConta[mesSelecionado] || []).filter(i => i.categoria === 'Pensão' && !i.excluido);
-      const totalPago = itensCartaoPensao.reduce((s, i) => s + i.valor, 0) + itensExtratoPensao.reduce((s, i) => s + i.valor, 0);
+      const totalPago = totalPorCategoriaNoMes('Pensão').total;
 
       const diferenca = totalDevido - totalPago;
       const classeDiferenca = diferenca !== 0 ? 'diferenca-pendente' : '';
@@ -2269,7 +2871,7 @@
       const itens = extratoConta[mesSelecionado] || [];
 
       if (itens.length === 0) {
-        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #898781; font-size: 13px; border: 1.5px dashed #d8d6cd; border-radius: 10px;">Nenhum lançamento de extrato importado para este mês ainda.</div>';
+        container.innerHTML = '<div class="vazio-bloco">Nenhum lançamento de extrato importado para este mês ainda.</div>';
         return;
       }
 
@@ -2508,40 +3110,208 @@
           continue;
         }
 
-        const itemExistente = despesasCartao[mesSelecionado].find(
-          item => item.data === data && item.valor === valor && item.descricao === descricao
-        );
-
-        if (!itemExistente) {
-          const classificacaoAnterior = buscarClassificacaoAnterior(descricao);
-          const categoriaFinal = classificacaoAnterior
-            ? classificacaoAnterior.categoria
-            : categorizarAutomaticamente(descricao);
-
-          despesasCartao[mesSelecionado].push({
-            data,
-            descricao,
-            valor,
-            parcela,
-            categoria: categoriaFinal,
-            cartao: (infoArquivo && infoArquivo.cartao) || '',
-            fatura: (infoArquivo && infoArquivo.fatura) || '',
-            numeroCartao: (infoArquivo && infoArquivo.numeroCartao) || '',
-            autoClassificado: !!classificacaoAnterior
-          });
-          itemCount++;
-          if (classificacaoAnterior) autoClassificados++;
-        } else if (infoArquivo && !itemExistente.cartao) {
-          // Item já tinha sido importado antes desta funcionalidade existir
-          // (sem identificação de cartão/fatura) — completa retroativamente
-          // ao reimportar a mesma fatura, sem duplicar a linha
-          itemExistente.cartao = infoArquivo.cartao || '';
-          itemExistente.fatura = infoArquivo.fatura || '';
-          itemExistente.numeroCartao = infoArquivo.numeroCartao || '';
-        }
+        const antes = { itemCount: 0, autoClassificados: 0 };
+        registrarItemCartao({ data, descricao, valor, parcela }, infoArquivo, antes);
+        itemCount += antes.itemCount;
+        autoClassificados += antes.autoClassificados;
       }
 
       return { itemCount, autoClassificados, ignoradosPagamento, ignoradosMetadados, ignoradosInvalidos };
+    }
+
+    // Chave de deduplicação de lançamentos de cartão: mesma data + mesmo valor
+    // + mesma descrição, comparando a descrição sem diferenças de caixa,
+    // espaços e pontuação — assim o MESMO lançamento vindo da planilha
+    // ("Ifd*a L Distribuidorfortalezabr") e do PDF ("IFD*A L DISTRIBUIDOR
+    // FORTALEZA BR") é reconhecido como um só e nunca contado duas vezes.
+    function chaveDedupCartao(data, valor, descricao) {
+      const desc = normalizarDescricao(descricao).replace(/\s+/g, '');
+      return `${(data || '').trim()}|${Number(valor).toFixed(2)}|${desc}`;
+    }
+
+    // Registra UM lançamento de fatura (venha de planilha ou de PDF) em
+    // despesasCartao do mês selecionado: deduplica, categoriza (reconhecendo
+    // meses anteriores) e identifica cartão/fatura de origem.
+    function registrarItemCartao(item, infoArquivo, contadores) {
+      const lista = despesasCartao[mesSelecionado];
+      const chaveNova = chaveDedupCartao(item.data, item.valor, item.descricao);
+      const itemExistente = lista.find(i => !i.precisaRevisao && chaveDedupCartao(i.data, i.valor, i.descricao) === chaveNova);
+
+      if (!itemExistente) {
+        const classificacaoAnterior = buscarClassificacaoAnterior(item.descricao);
+        const categoriaFinal = classificacaoAnterior
+          ? classificacaoAnterior.categoria
+          : categorizarAutomaticamente(item.descricao);
+
+        lista.push({
+          data: item.data,
+          descricao: item.descricao,
+          valor: item.valor,
+          parcela: item.parcela || '',
+          categoria: categoriaFinal,
+          cartao: (infoArquivo && infoArquivo.cartao) || '',
+          fatura: (infoArquivo && infoArquivo.fatura) || '',
+          numeroCartao: (infoArquivo && infoArquivo.numeroCartao) || '',
+          autoClassificado: !!classificacaoAnterior
+        });
+        contadores.itemCount++;
+        if (classificacaoAnterior) contadores.autoClassificados++;
+      } else if (infoArquivo && !itemExistente.cartao) {
+        // Item já tinha sido importado antes desta funcionalidade existir
+        // (sem identificação de cartão/fatura) — completa retroativamente
+        // ao reimportar a mesma fatura, sem duplicar a linha
+        itemExistente.cartao = infoArquivo.cartao || '';
+        itemExistente.fatura = infoArquivo.fatura || '';
+        itemExistente.numeroCartao = infoArquivo.numeroCartao || '';
+      }
+    }
+
+    // ── Fatura de cartão em PDF ──
+    // Primeira versão, GENÉRICA: reaproveita a leitura de linhas do PDF
+    // (extrairTextoPDF) e interpreta cada linha no formato
+    // "DD/MM Descrição [N/M] Valor". Foi escrita sem um PDF real de fatura de
+    // cartão para validar — por isso (1) nada que pareça lançamento é
+    // descartado em silêncio (linhas sem valor legível ficam visíveis com
+    // "⚠ verificar") e (2) o "Total carregado da fatura" de cada cartão
+    // permite conferir contra o total impresso na fatura.
+    function semAcentoMinusculo(t) {
+      return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    // Linhas que começam com data mas NÃO são compras: pagamentos recebidos,
+    // saldos anteriores e totais impressos na fatura
+    function deveIgnorarLinhaFaturaPDF(descricao) {
+      const d = semAcentoMinusculo(descricao).trim();
+      return /^(pagamento|pagto)\b/.test(d)
+        || /pagamento (efetuado|recebido|de fatura|com saldo)/.test(d)
+        || /saldo (da )?(fatura )?anterior/.test(d)
+        || /^total\b/.test(d)
+        || /\btotal (da|desta|dos|de) /.test(d);
+    }
+
+    // Mês/ano de referência da fatura (para completar o ano das datas
+    // "DD/MM"): do nome do arquivo, se tiver mês e ano; senão, do mês
+    // selecionado no painel
+    function referenciaMesFatura(infoArquivo) {
+      const m = semAcentoMinusculo((infoArquivo && infoArquivo.fatura) || '').match(/([a-z]+)\s+(\d{4})/);
+      if (m) {
+        const idx = MESES_PT.map(semAcentoMinusculo).indexOf(m[1]);
+        if (idx !== -1) return { ano: parseInt(m[2], 10), mes: idx + 1 };
+      }
+      const [a, mm] = mesSelecionado.split('-').map(Number);
+      return { ano: a, mes: mm };
+    }
+
+    // "DD/MM" -> "DD/MM/AAAA". Compra feita num mês posterior ao da fatura
+    // só pode ser do ano anterior (ex: compra de 30/11 numa fatura de setembro)
+    function completarDataFatura(ddmm, anoExplicito, ref) {
+      const [dd, mm] = ddmm.split('/');
+      let ano;
+      if (anoExplicito) {
+        ano = anoExplicito.length === 2 ? 2000 + parseInt(anoExplicito, 10) : parseInt(anoExplicito, 10);
+      } else {
+        ano = parseInt(mm, 10) > ref.mes ? ref.ano - 1 : ref.ano;
+      }
+      return `${dd}/${mm}/${ano}`;
+    }
+
+    function infoCartaoPorNumero(numero, infoBase) {
+      const nomePessoa = NOMES_POR_CARTAO[numero];
+      return {
+        ...infoBase,
+        cartao: nomePessoa ? `Cartão final ${numero} - ${nomePessoa}` : `Cartão final ${numero}`,
+        numeroCartao: numero
+      };
+    }
+
+    function processarTextoFaturaPDF(linhasTexto, infoArquivo) {
+      const contadores = {
+        itemCount: 0, autoClassificados: 0, ignoradosPagamento: 0,
+        ignoradosMetadados: 0, ignoradosInvalidos: 0, sinalizadosRevisao: 0
+      };
+      if (!despesasCartao[mesSelecionado]) despesasCartao[mesSelecionado] = [];
+
+      const ref = referenciaMesFatura(infoArquivo);
+
+      // Sem número de cartão no nome do arquivo: usa o primeiro "final NNNN"
+      // que aparecer no próprio PDF
+      let info = infoArquivo;
+      if (!info.numeroCartao) {
+        for (const l of linhasTexto) {
+          const mc = l.match(/\bfinal\s+(\d{4})\b/i);
+          if (mc) { info = infoCartaoPorNumero(mc[1], infoArquivo); break; }
+        }
+      }
+
+      // A fatura traz uma tabela de "próximas faturas" (parcelas futuras) que
+      // NÃO são lançamentos deste mês — pula esse trecho até o próximo
+      // cabeçalho de lançamentos
+      let emProximasFaturas = false;
+
+      for (const linha of linhasTexto) {
+        if (/pr[oó]ximas?\s+faturas?/i.test(linha)) { emProximasFaturas = true; continue; }
+        if (emProximasFaturas && /^(lan[cç]amentos|compras e saques|produtos e servi[cç]os|encargos)/i.test(linha)) {
+          emProximasFaturas = false;
+          continue;
+        }
+        if (emProximasFaturas) continue;
+
+        const mData = linha.match(/^(\d{2}\/\d{2})(?:\/(\d{4}|\d{2}))?\s+(.+)$/);
+        if (!mData) continue; // cabeçalhos, totais, rodapés: não começam com data
+
+        const data = completarDataFatura(mData[1], mData[2], ref);
+        const resto = mData[3].trim();
+
+        // Valor no fim da linha: "1.234,56", "-50,00" ou "50,00-" (crédito)
+        const mValor = resto.match(/^(.+?)\s+(-?[\d.]+,\d{2}-?)$/);
+        const descricaoBruta = mValor ? mValor[1].trim() : resto;
+
+        if (deveIgnorarLinhaFaturaPDF(descricaoBruta)) {
+          contadores.ignoradosPagamento++;
+          continue;
+        }
+
+        if (!mValor) {
+          // Começa com data mas o valor não pôde ser lido com segurança:
+          // mantém visível para conferência manual, nunca descarta
+          const jaExiste = despesasCartao[mesSelecionado].find(
+            i => i.precisaRevisao && i.data === data && i.descricao === descricaoBruta
+          );
+          if (!jaExiste) {
+            despesasCartao[mesSelecionado].push({
+              data, descricao: descricaoBruta, valor: 0, parcela: '',
+              categoria: 'Outros',
+              cartao: info.cartao || '', fatura: info.fatura || '', numeroCartao: info.numeroCartao || '',
+              autoClassificado: false, precisaRevisao: true
+            });
+            contadores.sinalizadosRevisao++;
+          }
+          continue;
+        }
+
+        let valorTexto = mValor[2];
+        if (valorTexto.endsWith('-')) valorTexto = '-' + valorTexto.slice(0, -1);
+        const valor = parseValorMonetario(valorTexto);
+        if (isNaN(valor)) { contadores.ignoradosInvalidos++; continue; }
+
+        // Parcela no fim da descrição ("... 10/12", "PARC 03/10"): vai para
+        // a coluna Parcela e sai da descrição, como na planilha
+        let descricao = descricaoBruta;
+        let parcela = '';
+        const mParc = descricao.match(/^(.*?)\s*(?:parc(?:ela)?\.?\s*)?(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})$/i);
+        if (mParc && mParc[1]) {
+          const candidata = `${parseInt(mParc[2], 10)}/${parseInt(mParc[3], 10)}`;
+          const p = parseParcela(candidata);
+          if (p && p.total >= 2) {
+            parcela = candidata;
+            descricao = mParc[1].trim();
+          }
+        }
+
+        registrarItemCartao({ data, descricao, valor, parcela }, info, contadores);
+      }
+
+      return contadores;
     }
 
     // Lê um único arquivo (CSV, XLS ou XLSX) e devolve uma Promise com a
@@ -2607,12 +3377,15 @@
     function extrairInfoArquivo(nomeArquivoOriginal) {
       const nomeArquivo = nomeArquivoOriginal.toLowerCase();
 
-      const matchCartao = nomeArquivo.match(/(\d{4})/);
-      const semExtensao = nomeArquivoOriginal.replace(/\.(csv|xlsx?|CSV|XLSX?)$/i, '');
+      // Quatro dígitos no nome do arquivo: prefere um final de cartão
+      // conhecido; senão o primeiro que não pareça um ano (ex: "2026")
+      const numeros = nomeArquivo.match(/\d{4}/g) || [];
+      const matchCartao = numeros.find(n => NOMES_POR_CARTAO[n]) || numeros.find(n => !/^20\d\d$/.test(n)) || null;
+      const semExtensao = nomeArquivoOriginal.replace(/\.(csv|xlsx?|pdf)$/i, '');
 
       let cartao, numeroCartao = '';
       if (matchCartao) {
-        numeroCartao = matchCartao[1];
+        numeroCartao = matchCartao;
         const nomePessoa = NOMES_POR_CARTAO[numeroCartao];
         cartao = nomePessoa ? `Cartão final ${numeroCartao} - ${nomePessoa}` : `Cartão final ${numeroCartao}`;
       } else {
@@ -2639,22 +3412,41 @@
       const arquivos = Array.from(fileInput.files || []);
 
       if (arquivos.length === 0) {
-        alert('Selecione um ou mais arquivos (.csv, .xls ou .xlsx)');
+        alert('Selecione um ou mais arquivos (planilha .csv, .xls, .xlsx ou PDF)');
         return;
       }
 
-      const resumoTotal = { itemCount: 0, autoClassificados: 0, ignoradosPagamento: 0, ignoradosMetadados: 0, ignoradosInvalidos: 0 };
+      const resumoTotal = { itemCount: 0, autoClassificados: 0, ignoradosPagamento: 0, ignoradosMetadados: 0, ignoradosInvalidos: 0, sinalizadosRevisao: 0 };
       const arquivosComErro = [];
+      const pdfsSemLancamentos = [];
+      let pdfsLidos = 0;
 
       for (const arquivo of arquivos) {
         try {
-          const linhas = await lerArquivoComoLinhas(arquivo);
-          const resumo = processarLinhas(linhas, extrairInfoArquivo(arquivo.name));
+          const infoArq = extrairInfoArquivo(arquivo.name);
+          let resumo;
+
+          if (arquivo.name.toLowerCase().endsWith('.pdf')) {
+            // Fatura em PDF (planilha ou PDF — o painel aceita os dois)
+            if (typeof pdfjsLib === 'undefined') {
+              throw new Error('Biblioteca de leitura de PDF não carregou');
+            }
+            const arrayBuffer = await arquivo.arrayBuffer();
+            const linhasTexto = await extrairTextoPDF(arrayBuffer);
+            resumo = processarTextoFaturaPDF(linhasTexto, infoArq);
+            pdfsLidos++;
+            if (resumo.itemCount + resumo.sinalizadosRevisao === 0) pdfsSemLancamentos.push(arquivo.name);
+          } else {
+            const linhas = await lerArquivoComoLinhas(arquivo);
+            resumo = processarLinhas(linhas, infoArq);
+          }
+
           resumoTotal.itemCount += resumo.itemCount;
           resumoTotal.autoClassificados += resumo.autoClassificados;
           resumoTotal.ignoradosPagamento += resumo.ignoradosPagamento;
           resumoTotal.ignoradosMetadados += resumo.ignoradosMetadados;
           resumoTotal.ignoradosInvalidos += resumo.ignoradosInvalidos;
+          resumoTotal.sinalizadosRevisao += (resumo.sinalizadosRevisao || 0);
         } catch (err) {
           arquivosComErro.push(arquivo.name);
         }
@@ -2678,6 +3470,15 @@
       if (resumoTotal.ignoradosInvalidos > 0) {
         msg += `. ${resumoTotal.ignoradosInvalidos} linha(s) ignorada(s) por falta de descrição ou valor válido`;
       }
+      if (resumoTotal.sinalizadosRevisao > 0) {
+        msg += `. ${resumoTotal.sinalizadosRevisao} linha(s) do PDF com valor não identificado com segurança — mantida(s) visível(is) para conferência (⚠ verificar)`;
+      }
+      if (pdfsSemLancamentos.length > 0) {
+        msg += `. Nenhum lançamento reconhecido em: ${pdfsSemLancamentos.join(', ')} — o layout deste PDF pode ser diferente do esperado; use a planilha da fatura ou envie o PDF para ajuste`;
+      }
+      if (pdfsLidos > 0) {
+        msg += `. PDF: confira o "Total carregado da fatura" de cada cartão com o total impresso na fatura`;
+      }
       if (arquivosComErro.length > 0) {
         msg += `. Não foi possível ler: ${arquivosComErro.join(', ')}`;
       }
@@ -2698,54 +3499,58 @@
       (funcaoRenderizar || renderizarCartao)();
     }
 
-    function recolherTodosCartoes() {
-      const itens = obterItensComProjecoes(mesSelecionado);
-      itens.forEach(item => {
-        cartoesRecolhidos[item.cartao || 'Cartão não identificado'] = true;
+    // Regra 3 — Despesas de Cartão de Crédito e Extrato da Conta Corrente
+    // recolhem/expandem a SEÇÃO inteira pelo cabeçalho, no mesmo padrão da
+    // Pensão (seta ▶/▼ + resumo à direita). Puramente visual: nenhum cálculo
+    // depende disso. O estado vive em cartoesRecolhidos, com chave "secao:*".
+    const SECOES_RECOLHIVEIS = [
+      { chave: 'secao:cartao', cabecalho: 'cabecalhoSecaoCartao', corpo: 'corpoSecaoCartao', chevron: 'chevronSecaoCartao' },
+      { chave: 'secao:extrato', cabecalho: 'cabecalhoSecaoExtrato', corpo: 'corpoSecaoExtrato', chevron: 'chevronSecaoExtrato' }
+    ];
+
+    function aplicarEstadoSecoes() {
+      let cartaoAcabouDeAbrir = false;
+      SECOES_RECOLHIVEIS.forEach(sec => {
+        const recolhida = !!cartoesRecolhidos[sec.chave];
+        const corpo = document.getElementById(sec.corpo);
+        const chevron = document.getElementById(sec.chevron);
+        const cabecalho = document.getElementById(sec.cabecalho);
+        if (corpo) {
+          if (sec.chave === 'secao:cartao' && corpo.hidden === true && !recolhida) cartaoAcabouDeAbrir = true;
+          corpo.hidden = recolhida;
+        }
+        if (chevron) chevron.textContent = recolhida ? '▶' : '▼';
+        if (cabecalho) cabecalho.setAttribute('aria-expanded', String(!recolhida));
       });
-      renderizarCartao();
+      // A pizza de categorias mora dentro da seção do cartão. Um canvas criado
+      // enquanto a seção estava recolhida (tamanho 0) não anima direito ao
+      // aparecer; por isso, na hora de abrir, o gráfico é recriado já visível.
+      if (cartaoAcabouDeAbrir && graficoPizza) {
+        try {
+          graficoPizza.destroy();
+          graficoPizza = null;
+          atualizarGraficoPizza(despesasCartao[mesSelecionado] || []);
+        } catch (e) { /* só afeta o desenho */ }
+      }
     }
 
-    function expandirTodosCartoes() {
-      const itens = obterItensComProjecoes(mesSelecionado);
-      itens.forEach(item => {
-        cartoesRecolhidos[item.cartao || 'Cartão não identificado'] = false;
+    function alternarSecao(chave) {
+      cartoesRecolhidos[chave] = !cartoesRecolhidos[chave];
+      aplicarEstadoSecoes();
+    }
+
+    function ligarCabecalhosDasSecoes() {
+      SECOES_RECOLHIVEIS.forEach(sec => {
+        const cabecalho = document.getElementById(sec.cabecalho);
+        if (!cabecalho) return;
+        cabecalho.addEventListener('click', () => alternarSecao(sec.chave));
+        cabecalho.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            alternarSecao(sec.chave);
+          }
+        });
       });
-      renderizarCartao();
-    }
-
-    function recolherTodosExtrato() {
-      const itens = extratoConta[mesSelecionado] || [];
-      itens.forEach(item => {
-        cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = true;
-      });
-      renderizarExtrato();
-    }
-
-    function expandirTodosExtrato() {
-      const itens = extratoConta[mesSelecionado] || [];
-      itens.forEach(item => {
-        cartoesRecolhidos['extrato:' + (item.origem || 'Conta Corrente')] = false;
-      });
-      renderizarExtrato();
-    }
-
-    // Regra — Padronização do Recolhimento dos Blocos: ação global que
-    // recolhe/expande Cartão + Extrato + Pensão de uma só vez, em
-    // complemento ao controle individual que cada bloco já tem. Puramente
-    // visual, como qualquer recolher/expandir — não toca em nenhum cálculo.
-    function recolherTudo() {
-      recolherTodosCartoes();
-      recolherTodosExtrato();
-      cartoesRecolhidos['pensao'] = true;
-      renderizarPensao();
-    }
-
-    function expandirTudo() {
-      expandirTodosCartoes();
-      expandirTodosExtrato();
-      cartoesRecolhidos['pensao'] = false;
-      renderizarPensao();
     }
 
     function renderizarCartao() {
@@ -2757,7 +3562,7 @@
       const itens = obterItensComProjecoes(mesSelecionado);
 
       if (itens.length === 0) {
-        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #898781; font-size: 13px; border: 1.5px dashed #d8d6cd; border-radius: 10px;">Nenhuma despesa de cartão importada para este mês ainda.</div>';
+        container.innerHTML = '<div class="vazio-bloco">Nenhuma despesa de cartão importada para este mês ainda.</div>';
         return;
       }
 
@@ -2834,9 +3639,12 @@
           const classeCor = classeDestaqueLinha(item);
           if (classeCor) classes.push(classeCor);
           if (item.projetado) classes.push('linha-projetada');
+          if (item.precisaRevisao) classes.push('linha-revisao');
 
           let statusHtml = '';
-          if (item.projetado) {
+          if (item.precisaRevisao) {
+            statusHtml = '<span class="badge-revisao" title="Não foi possível ler o valor desta linha com segurança no PDF. Confira na fatura original.">⚠ verificar</span>';
+          } else if (item.projetado) {
             statusHtml = item.divergente
               ? '<span class="badge-divergente" title="A fatura deste cartão já foi importada neste mês, mas esta parcela não foi encontrada nela — vale investigar.">⚠ divergente</span>'
               : '<span class="badge-projetado">Projetado</span>';
@@ -2859,7 +3667,7 @@
               <td>${item.parcela || '—'}</td>
               <td>${item.descricao}${statusHtml}</td>
               <td>${item.fatura || '—'}</td>
-              <td>R$ ${item.valor.toFixed(2)}</td>
+              <td>${item.precisaRevisao ? '—' : 'R$ ' + item.valor.toFixed(2)}</td>
               <td>${celulaCategoria}</td>
             </tr>
           `;
@@ -2917,38 +3725,19 @@
     }
 
     function atualizarResumo() {
-      const mes = dadosMeses[mesSelecionado] || {};
-      
-      const totalReceita = camposReceita.reduce((sum, campo) => sum + (mes[campo] || 0), 0);
-      const totalFixas = camposFixos.reduce((sum, campo) => sum + (mes[campo] || 0), 0);
-
-      // Regra 3/9 — Total de Despesas soma os lançamentos reais MAIS as
-      // parcelas futuras já projetadas para este mês, respeitando as mesmas
-      // exclusões por categoria (Terceiro/Pensão)
-      const itensCartaoComProjecoes = obterItensComProjecoes(mesSelecionado);
-      const totalCartaoConsiderado = itensCartaoComProjecoes
-        .filter(item => categoriaContaNoCalculo(item.categoria))
-        .reduce((sum, item) => sum + item.valor, 0);
-      
-      const totalCartaoTerceiro = itensCartaoComProjecoes
-        .filter(item => !categoriaContaNoCalculo(item.categoria))
-        .reduce((sum, item) => sum + item.valor, 0);
-
-      // Regra 8 — lançamentos de débito do extrato somam ao Total de
-      // Despesas, com as mesmas exclusões (Terceiro/Pensão/Pagamento de
-      // Fatura — Regra 9). A nova exclusão individual e manual (Regra 2 da
-      // Exclusão de Lançamento do Extrato) some do cálculo do mesmo jeito.
-      const itensExtrato = extratoConta[mesSelecionado] || [];
-      const totalExtratoConsiderado = itensExtrato
-        .filter(item => categoriaContaNoCalculo(item.categoria) && !item.excluido)
-        .reduce((sum, item) => sum + item.valor, 0);
-
-      const totalExtratoExcluido = itensExtrato
-        .filter(item => !categoriaContaNoCalculo(item.categoria) && !item.excluido)
-        .reduce((sum, item) => sum + item.valor, 0);
-      
-      const totalDespesas = totalFixas + totalCartaoConsiderado + totalExtratoConsiderado;
-      const resultado = totalReceita - totalFixas - totalCartaoConsiderado - totalExtratoConsiderado;
+      // Fonte única dos totais do mês (também usada pelos gráficos):
+      // lançamentos reais + parcelas projetadas, respeitando as exclusões
+      // por categoria (Terceiro/Pensão/Reembolso/Pagamento de Fatura) e a
+      // exclusão manual de itens do extrato.
+      const resumoMes = calcularResumoMes(mesSelecionado);
+      const totalReceita = resumoMes.receita;
+      const totalFixas = resumoMes.fixas;
+      const totalCartaoConsiderado = resumoMes.cartaoConsiderado;
+      const totalCartaoTerceiro = resumoMes.cartaoForaDoCalculo;
+      const totalExtratoConsiderado = resumoMes.extratoConsiderado;
+      const totalExtratoExcluido = resumoMes.extratoExcluido;
+      const totalDespesas = resumoMes.despesas;
+      const resultado = resumoMes.resultado;
 
       document.getElementById('totalReceita').textContent = formatCurrency(totalReceita);
       document.getElementById('totalFixas').textContent = formatCurrency(totalFixas);
@@ -2960,6 +3749,8 @@
       document.getElementById('totalCartaoTerceiro').textContent = formatCurrency(totalCartaoTerceiro);
       document.getElementById('totalExtratoConsiderado').textContent = formatCurrency(totalExtratoConsiderado);
       document.getElementById('totalExtratoExcluido').textContent = formatCurrency(totalExtratoExcluido);
+      document.getElementById('resumoSecaoCartao').textContent = 'Total Cartão (Família): ' + formatCurrency(totalCartaoConsiderado);
+      document.getElementById('resumoSecaoExtrato').textContent = 'Total Extrato (Família): ' + formatCurrency(totalExtratoConsiderado);
 
       const resumo = document.getElementById('resumo');
       const resultadoEl = document.getElementById('resultado');
@@ -2982,6 +3773,8 @@
 
       atualizarIndicadorParcelasFuturas();
       atualizarValoresPensao();
+      atualizarTotalizados();
+      atualizarGraficosVisaoGeral();
     }
 
     // Regra 11 — mantém o indicador de parcelas futuras previstas sempre
@@ -2992,7 +3785,7 @@
       const listaEl = document.getElementById('parcelasFuturasPorMes');
       if (!container || !totalEl || !listaEl) return;
 
-      const { totalGeral, porMes } = calcularTotalParcelasFuturas();
+      const { totalGeral, porMes, porCategoria } = calcularTotalParcelasFuturas();
 
       if (totalGeral <= 0) {
         container.style.display = 'none';
@@ -3002,6 +3795,28 @@
       container.style.display = 'block';
       totalEl.textContent = formatCurrency(totalGeral);
 
+      // Abertura por categoria: da maior para a menor, com a mesma cor da
+      // pizza de gastos (a categoria mantém a identidade nos dois blocos)
+      const catEl = document.getElementById('parcelasFuturasPorCategoria');
+      if (catEl) {
+        const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const categorias = Object.keys(porCategoria)
+          .sort((a, b) => (porCategoria[b] - porCategoria[a]) || a.localeCompare(b, 'pt-BR'));
+        catEl.innerHTML = categorias.map(cat => {
+          const valor = porCategoria[cat];
+          const pct = (valor / totalGeral) * 100;
+          const cor = CORES_CATEGORIA[cat] || '#5f7682';
+          return `
+            <div class="parcela-cat-linha" role="listitem">
+              <span class="parcela-cat-cor" style="background:${cor}"></span>
+              <span class="parcela-cat-nome" title="${esc(cat)}">${esc(cat)}</span>
+              <span class="parcela-cat-valor">${formatCurrency(valor)}</span>
+              <span class="parcela-cat-pct">${pct.toFixed(1)}%</span>
+              <span class="parcela-cat-barra" aria-hidden="true"><span style="width:${Math.max(pct, 1.5).toFixed(1)}%;background:${cor}"></span></span>
+            </div>`;
+        }).join('');
+      }
+
       const mesesOrdenados = Object.keys(porMes).sort();
       listaEl.innerHTML = mesesOrdenados.map(m =>
         `<div class="parcela-mes-chip"><span>${nomeMesLegivel(m)}</span><strong>${formatCurrency(porMes[m])}</strong></div>`
@@ -3010,15 +3825,29 @@
 
     // Paleta de cores fixa por categoria, para o gráfico ficar consistente
     // entre meses (a mesma categoria sempre com a mesma cor)
+    // (cada fatia com contraste ≥ 3:1 contra o fundo do cartão; a identidade
+    // da categoria também vai na legenda e no % sobre as maiores fatias, não
+    // só na cor)
     const CORES_CATEGORIA = {
-      'Alimentação': '#e08a3c', 'Ifood': '#d0393a', 'Supermercado': '#3f8f4f',
-      'Farmácia': '#3f9e9e', 'Saúde': '#3f7fa6', 'Combustível': '#c2410c', 'Carro': '#8a6d3b', 'Uber': '#b98a3c',
-      'Compras': '#a05fb4', 'Assinaturas': '#5c6bc0', 'Lazer': '#c2185b',
-      'Educação': '#00838f', 'Serviços': '#6d4c41', 'Pet': '#7cb342', 'Casa': '#558b2f',
-      'Viagem': '#0277bd', 'Reembolso': '#00acc1', 'Outros': '#78909c'
+      'Alimentação': '#aa5f1b', 'Ifood': '#d0393a', 'Supermercado': '#398147',
+      'Farmácia': '#327d7d', 'Saúde': '#3c799f', 'Combustível': '#c2410c',
+      'Carro': '#8a6d3b', 'Uber': '#926d2f', 'Compras': '#9c58b1', 'Roupas': '#4527a0',
+      'Assinaturas': '#5c6bc0', 'Lazer': '#c2185b', 'Educação': '#007e8a',
+      'Serviços': '#6d4c41', 'Pet': '#557b2d', 'Casa': '#4e802b',
+      'Viagem': '#0277bd', 'Reembolso': '#007e8d', 'Outros': '#5f7682'
     };
 
     let graficoPizza = null;
+
+    // Cor de texto (azul-marinho escuro ou branco) com mais contraste sobre uma cor
+    function corTextoSobre(hex) {
+      const n = parseInt(String(hex).slice(1), 16);
+      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+      const contrasteComBranco = 1.05 / (L + 0.05);
+      const contrasteComMarinho = (L + 0.05) / (0.0163 + 0.05);
+      return contrasteComBranco >= contrasteComMarinho ? '#ffffff' : '#0f2146';
+    }
 
     // Recalcula e redesenha o gráfico de pizza dos gastos de cartão por
     // categoria do mês selecionado (itens Terceiro nunca entram aqui, já
@@ -3040,7 +3869,6 @@
 
         const ctx = chart.ctx;
         ctx.save();
-        ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -3049,6 +3877,8 @@
           const arc = meta.data[i];
           if (!arc) return;
           const pct = ((dataset.data[i] / total) * 100).toFixed(1);
+          const corFatia = Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[i] : dataset.backgroundColor;
+          ctx.fillStyle = corTextoSobre(corFatia);
           const angulo = (arc.startAngle + arc.endAngle) / 2;
           const raio = ((arc.innerRadius || 0) + arc.outerRadius) / 2;
           const x = arc.x + Math.cos(angulo) * raio;
@@ -3072,7 +3902,7 @@
         return `
           <div class="legenda-item">
             <span class="legenda-cor" style="background:${cores[i]}"></span>
-            <span class="legenda-nome">${cat}</span>
+            <span class="legenda-nome" title="${cat}">${cat}</span>
             <span class="legenda-valor">${formatCurrency(valores[i])}</span>
             <span class="legenda-pct">${pct}%</span>
           </div>
@@ -3128,7 +3958,7 @@
       if (vazio) vazio.style.display = 'none';
       container.style.display = 'block';
       const valores = categorias.map(cat => porCategoria[cat]);
-      const cores = categorias.map(cat => CORES_CATEGORIA[cat] || '#a8a29e');
+      const cores = categorias.map(cat => CORES_CATEGORIA[cat] || '#c4c0ba');
       const total = valores.reduce((a, b) => a + b, 0);
 
       gerarLegendaPizza(categorias, valores, cores, total);
@@ -3144,7 +3974,7 @@
             type: 'pie',
             data: {
               labels: categorias,
-              datasets: [{ data: valores, backgroundColor: cores }]
+              datasets: [{ data: valores, backgroundColor: cores, borderColor: '#f1f6ff', borderWidth: 2, hoverBorderColor: '#f1f6ff' }]
             },
             options: {
               responsive: true,
@@ -3179,6 +4009,851 @@
         }
       }
     }
+
+    // ────────────────────────────────────────────────────────────
+    // BLOCO E — Gráficos de visão geral
+    //   1) Receita × Despesas por mês (com Resultado)
+    //   2) Projeção dos próximos meses (receita × fixas + parcelas futuras)
+    //   3) Ritmo de gasto no mês (acumulado × receita)
+    // Todos usam os MESMOS números dos cards do topo: calcularResumoMes() é
+    // a única fonte do Total de Despesas / Resultado de qualquer mês.
+    // ────────────────────────────────────────────────────────────
+    const MESES_ABREV_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    function rotuloMesCurto(mesChave) {
+      const [ano, mes] = mesChave.split('-').map(Number);
+      return `${MESES_ABREV_PT[mes - 1]}/${String(ano).slice(2)}`;
+    }
+
+    // Eixo Y compacto a partir de 1.000: 0 / 5 mil / 12,5 mil
+    function formatMoedaCompacta(v) {
+      const abs = Math.abs(v);
+      const sinal = v < 0 ? '-' : '';
+      if (abs >= 1000) {
+        const mil = abs / 1000;
+        return `${sinal}${mil.toLocaleString('pt-BR', { maximumFractionDigits: mil >= 100 ? 0 : 1 })} mil`;
+      }
+      return `${sinal}${abs.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
+    }
+
+    // Fonte única dos totais de um mês (os cards do topo e os gráficos usam
+    // esta função). Respeita as mesmas regras: parcelas projetadas entram,
+    // categorias fora do cálculo (Terceiro/Pensão/Reembolso/Pagamento de
+    // Fatura) não somam, itens do extrato excluídos manualmente não somam.
+    function calcularResumoMes(mes) {
+      const dados = dadosMeses[mes] || {};
+      const receita = camposReceita.reduce((s, c) => s + (dados[c] || 0), 0);
+      const fixas = camposFixos.reduce((s, c) => s + (dados[c] || 0), 0);
+
+      const itensCartao = obterItensComProjecoes(mes);
+      const cartaoConsiderado = itensCartao
+        .filter(i => categoriaContaNoCalculo(i.categoria))
+        .reduce((s, i) => s + i.valor, 0);
+      const cartaoForaDoCalculo = itensCartao
+        .filter(i => !categoriaContaNoCalculo(i.categoria))
+        .reduce((s, i) => s + i.valor, 0);
+
+      const itensExtrato = extratoConta[mes] || [];
+      const extratoConsiderado = itensExtrato
+        .filter(i => categoriaContaNoCalculo(i.categoria) && !i.excluido)
+        .reduce((s, i) => s + i.valor, 0);
+      const extratoExcluido = itensExtrato
+        .filter(i => !categoriaContaNoCalculo(i.categoria) && !i.excluido)
+        .reduce((s, i) => s + i.valor, 0);
+
+      const despesas = fixas + cartaoConsiderado + extratoConsiderado;
+      return {
+        receita, fixas, cartaoConsiderado, cartaoForaDoCalculo,
+        extratoConsiderado, extratoExcluido, despesas,
+        resultado: receita - despesas
+      };
+    }
+
+    function mesTemCartaoReal(mes) {
+      return (despesasCartao[mes] || []).some(i => !i.projetado && !i.precisaRevisao);
+    }
+
+    function mesTemExtratoReal(mes) {
+      return (extratoConta[mes] || []).length > 0;
+    }
+
+    // ── Gráfico 1: série mensal realizada ──
+    // Vai do primeiro ao último mês com fatura/extrato importados. Mês sem
+    // fatura de cartão no meio do período fica marcado como incompleto:
+    // sem a fatura, a despesa aparece subestimada e o mês "parece barato".
+    function montarSerieMensal() {
+      const reais = MESES_DISPONIVEIS.filter(m => mesTemCartaoReal(m) || mesTemExtratoReal(m));
+      if (reais.length === 0) return [];
+      const ini = MESES_DISPONIVEIS.indexOf(reais[0]);
+      const fim = MESES_DISPONIVEIS.indexOf(reais[reais.length - 1]);
+      return MESES_DISPONIVEIS.slice(ini, fim + 1).map(mes => ({
+        mes,
+        rotulo: rotuloMesCurto(mes),
+        ...calcularResumoMes(mes),
+        temCartao: mesTemCartaoReal(mes),
+        temExtrato: mesTemExtratoReal(mes)
+      }));
+    }
+
+    // ── Gráfico 2: receita e despesas fixas de um mês ainda não preenchido ──
+    // Um mês futuro que ninguém abriu ainda não tem dados; o painel, ao
+    // abri-lo, copiaria o mês anterior (Regra 6). A projeção usa a mesma
+    // lógica: repete o último mês preenchido, e avisa que é estimativa.
+    function somaCampos(campos, dados) {
+      return campos.reduce((s, c) => s + ((dados && dados[c]) || 0), 0);
+    }
+
+    function baseReceitaFixas(mes) {
+      const d = dadosMeses[mes];
+      if (d && (somaCampos(camposReceita, d) > 0 || somaCampos(camposFixos, d) > 0)) {
+        return { receita: somaCampos(camposReceita, d), fixas: somaCampos(camposFixos, d), estimado: false, origem: mes };
+      }
+      for (let i = MESES_DISPONIVEIS.indexOf(mes) - 1; i >= 0; i--) {
+        const anterior = dadosMeses[MESES_DISPONIVEIS[i]];
+        if (anterior && (somaCampos(camposReceita, anterior) > 0 || somaCampos(camposFixos, anterior) > 0)) {
+          return {
+            receita: somaCampos(camposReceita, anterior), fixas: somaCampos(camposFixos, anterior),
+            estimado: true, origem: MESES_DISPONIVEIS[i]
+          };
+        }
+      }
+      return { receita: 0, fixas: 0, estimado: true, origem: null };
+    }
+
+    // Do mês seguinte ao último com fatura de cartão importada até o último
+    // mês com parcela prevista (mínimo 6 meses, máximo 12). As parcelas vêm
+    // de calcularTotalParcelasFuturas() — as mesmas dos chips do card
+    // "Parcelas Futuras Previstas" (sem Terceiro/Pensão/Reembolso).
+    function montarSerieProjecao() {
+      const mesesComFatura = MESES_DISPONIVEIS.filter(mesTemCartaoReal);
+      const ultimoReal = mesesComFatura.length ? mesesComFatura[mesesComFatura.length - 1] : null;
+      let idxIni = ultimoReal ? MESES_DISPONIVEIS.indexOf(ultimoReal) + 1 : MESES_DISPONIVEIS.indexOf(mesSelecionado);
+      if (idxIni < 0) idxIni = 0;
+      if (idxIni >= MESES_DISPONIVEIS.length) return [];
+
+      const { porMes } = calcularTotalParcelasFuturas();
+      const comParcela = Object.keys(porMes)
+        .filter(m => MESES_DISPONIVEIS.indexOf(m) >= idxIni)
+        .sort();
+      let idxFim = idxIni + 5;
+      if (comParcela.length) {
+        idxFim = Math.max(idxFim, MESES_DISPONIVEIS.indexOf(comParcela[comParcela.length - 1]));
+      }
+      idxFim = Math.min(idxFim, idxIni + 11, MESES_DISPONIVEIS.length - 1);
+
+      return MESES_DISPONIVEIS.slice(idxIni, idxFim + 1).map(mes => {
+        const base = baseReceitaFixas(mes);
+        const parcelas = porMes[mes] || 0;
+        return {
+          mes,
+          rotulo: rotuloMesCurto(mes),
+          receita: base.receita,
+          fixas: base.fixas,
+          parcelas,
+          folga: base.receita - base.fixas - parcelas,
+          estimado: base.estimado,
+          origem: base.origem
+        };
+      });
+    }
+
+    // ── Gráfico 3: ritmo de gasto do mês selecionado ──
+    function parseDataBR(texto) {
+      const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((texto || '').trim());
+      if (!m) return null;
+      const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function rotuloDiaMes(d) {
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    // O ponto "Início" reúne o que já está comprometido no mês: despesas
+    // fixas + parcelas (projetadas, ou de compras antigas — a fatura do
+    // Itaú mostra nelas a data da compra ORIGINAL, que não é gasto novo do
+    // período) + lançamentos sem data legível. Depois, cada dia soma as
+    // compras do cartão e os débitos do extrato daquela data. O último
+    // ponto fecha EXATAMENTE no Total de Despesas do mês.
+    function montarSerieRitmo(mes) {
+      const resumo = calcularResumoMes(mes);
+      const itensCartao = obterItensComProjecoes(mes);
+      const porDia = new Map();
+      const adicionarNoDia = (data, valor) => {
+        const t = data.getTime();
+        porDia.set(t, (porDia.get(t) || 0) + valor);
+      };
+
+      let parcelasEmAndamento = 0;
+      let semData = 0;
+
+      itensCartao
+        .filter(i => categoriaContaNoCalculo(i.categoria) && !i.precisaRevisao)
+        .forEach(i => {
+          if (i.projetado) { parcelasEmAndamento += i.valor; return; }
+          const p = parseParcela(i.parcela);
+          if (p && p.atual > 1) { parcelasEmAndamento += i.valor; return; }
+          const d = parseDataBR(i.data);
+          if (!d) { semData += i.valor; return; }
+          adicionarNoDia(d, i.valor);
+        });
+
+      (extratoConta[mes] || [])
+        .filter(i => categoriaContaNoCalculo(i.categoria) && !i.excluido)
+        .forEach(i => {
+          const d = parseDataBR(i.data);
+          if (!d) { semData += i.valor; return; }
+          adicionarNoDia(d, i.valor);
+        });
+
+      if (porDia.size === 0) {
+        return { vazio: true, resumo, base: resumo.fixas + parcelasEmAndamento + semData };
+      }
+
+      const base = resumo.fixas + parcelasEmAndamento + semData;
+      const tempos = [...porDia.keys()].sort((a, b) => a - b);
+      const DIA_MS = 24 * 60 * 60 * 1000;
+      const spanDias = Math.round((tempos[tempos.length - 1] - tempos[0]) / DIA_MS);
+
+      // Período normal (até ~2 meses): um ponto por dia, inclusive dias sem
+      // gasto, para a inclinação refletir o tempo. Se as datas forem muito
+      // espalhadas, só os dias que têm lançamento.
+      let dias;
+      if (spanDias <= 62) {
+        dias = [];
+        for (let k = 0; k <= spanDias; k++) {
+          const d = new Date(tempos[0]);
+          d.setDate(d.getDate() + k);
+          dias.push(d);
+        }
+      } else {
+        dias = tempos.map(t => new Date(t));
+      }
+
+      let acumulado = base;
+      const pontos = [{ rotulo: 'Início', gastoDia: base, acumulado, inicio: true }];
+      dias.forEach(d => {
+        const gasto = porDia.get(d.getTime()) || 0;
+        acumulado += gasto;
+        pontos.push({ rotulo: rotuloDiaMes(d), gastoDia: gasto, acumulado, inicio: false });
+      });
+
+      // Em que ponto o acumulado passa da receita?
+      let indiceEstouro = -1;
+      if (resumo.receita > 0) {
+        indiceEstouro = pontos.findIndex(p => p.acumulado > resumo.receita);
+      }
+
+      return {
+        vazio: false,
+        resumo,
+        base,
+        fixas: resumo.fixas,
+        parcelasEmAndamento,
+        semData,
+        pontos,
+        indiceEstouro
+      };
+    }
+
+    // ── Tema e cores dos gráficos — um único tema azul claro (o mesmo do
+    // painel), com a paleta categórica validada contra a superfície do cartão
+    // (#f1f6ff): lightness, croma, separação para daltônicos e contraste ≥ 3:1.
+    // Série 1 = Receita (azul), 2 = Despesas (laranja), 3 = Parcelas (verde-água).
+    // Verde/vermelho de status são reservados a superávit/déficit.
+    function temaGrafico() {
+      return {
+        superficie: '#f1f6ff', texto: '#0f2146', textoSec: '#34507f', muted: '#465d8c',
+        grade: '#d3e1f7', eixo: '#9fb6dc',
+        serie: ['#2a78d6', '#e0561f', '#13986a'], bom: '#0ca30c', critico: '#d03b3b'
+      };
+    }
+
+    function corComAlpha(hex, alpha) {
+      const n = parseInt(hex.slice(1), 16);
+      return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+    }
+
+    const FONTE_GRAFICO = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+
+    // Plugins próprios do Chart.js
+    // (a) rótulo direto no fim de cada linha — nome + valor, em tinta de
+    //     texto (nunca na cor da série); quem tem o maior valor fica acima
+    //     do ponto, o outro abaixo, para não colidirem
+    const rotulosFimPlugin = {
+      id: 'rotulosFim',
+      afterDatasetsDraw(chart, args, opcoes) {
+        if (!opcoes || !opcoes.cor) return;
+        const alvos = [];
+        chart.data.datasets.forEach((ds, i) => {
+          if (!ds.rotuloFim) return;
+          const meta = chart.getDatasetMeta(i);
+          if (meta.hidden) return;
+          let idx = ds.data.length - 1;
+          while (idx >= 0 && (ds.data[idx] === null || ds.data[idx] === undefined || isNaN(ds.data[idx]))) idx--;
+          if (idx < 0 || !meta.data[idx]) return;
+          alvos.push({
+            texto: `${ds.rotuloFim} R$ ${formatMoedaCompacta(ds.data[idx])}`,
+            x: meta.data[idx].x, y: meta.data[idx].y, valor: ds.data[idx]
+          });
+        });
+        if (alvos.length === 0) return;
+        alvos.sort((a, b) => b.valor - a.valor);
+        const ctx = chart.ctx;
+        const area = chart.chartArea;
+        ctx.save();
+        ctx.font = `600 11px ${FONTE_GRAFICO}`;
+        ctx.textAlign = 'right';
+        ctx.lineJoin = 'round';
+        alvos.forEach((a, k) => {
+          let acima = alvos.length > 1 ? k === 0 : a.valor >= 0;
+          // sem espaço no lado preferido (rótulo sairia do gráfico): vai para o outro
+          if (acima && a.y - 24 < 0) acima = false;
+          else if (!acima && a.y + 24 > chart.height) acima = true;
+          ctx.textBaseline = acima ? 'bottom' : 'top';
+          const x = Math.min(a.x + 6, area.right);
+          const y = a.y + (acima ? -9 : 9);
+          // contorno na cor da superfície: o texto continua legível por cima de barras e linhas
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = opcoes.halo || '#ffffff';
+          ctx.strokeText(a.texto, x, y);
+          ctx.fillStyle = opcoes.cor;
+          ctx.fillText(a.texto, x, y);
+        });
+        ctx.restore();
+      }
+    };
+
+    // (b) faixa suave atrás do mês que está aberto no painel
+    const destaqueMesPlugin = {
+      id: 'destaqueMes',
+      beforeDatasetsDraw(chart, args, opcoes) {
+        if (!opcoes || opcoes.indice === undefined || opcoes.indice < 0) return;
+        const area = chart.chartArea;
+        const ticks = (chart.data.labels || []).length;
+        if (!ticks) return;
+        const largura = (area.right - area.left) / ticks;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.fillStyle = opcoes.cor;
+        ctx.fillRect(area.left + largura * opcoes.indice, area.top, largura, area.bottom - area.top);
+        ctx.restore();
+      }
+    };
+
+    // (c) linha vertical fininha que acompanha o ponteiro (gráfico de linha)
+    const crosshairPlugin = {
+      id: 'crosshair',
+      afterDatasetsDraw(chart, args, opcoes) {
+        if (!opcoes || !opcoes.cor || !chart.tooltip) return;
+        const ativos = chart.tooltip.getActiveElements();
+        if (!ativos || ativos.length === 0) return;
+        const x = ativos[0].element.x;
+        const area = chart.chartArea;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, area.top);
+        ctx.lineTo(x, area.bottom);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = opcoes.cor;
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+
+    function opcoesComuns(tema, extra) {
+      const pluginsExtra = Object.assign({}, extra.plugins || {});
+      const tooltipExtra = pluginsExtra.tooltip || {};
+      delete pluginsExtra.tooltip; // mesclado abaixo, para não perder o estilo base
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        layout: { padding: { top: 6, right: 8 } },
+        plugins: Object.assign({
+          // Legenda própria em HTML (renderizarLegendaGrafico): espelha a marca —
+          // retângulo para barra, traço para linha, ponto para marcador
+          legend: { display: false },
+          tooltip: Object.assign({
+            backgroundColor: tema.superficie,
+            titleColor: tema.texto,
+            bodyColor: tema.texto,
+            footerColor: tema.textoSec,
+            borderColor: tema.eixo,
+            borderWidth: 1,
+            padding: 10,
+            boxPadding: 4,
+            usePointStyle: true,
+            titleFont: { family: FONTE_GRAFICO, weight: '600' },
+            bodyFont: { family: FONTE_GRAFICO },
+            footerFont: { family: FONTE_GRAFICO, weight: '400' }
+          }, tooltipExtra)
+        }, pluginsExtra),
+        scales: {
+          x: Object.assign({
+            grid: { display: false },
+            border: { color: tema.eixo },
+            ticks: { color: tema.textoSec, font: { size: 11, family: FONTE_GRAFICO }, maxRotation: 0 }
+          }, extra.x || {}),
+          y: Object.assign({
+            grid: {
+              color: ctx => (ctx.tick && ctx.tick.value === 0 ? tema.eixo : tema.grade),
+              lineWidth: 1
+            },
+            border: { display: false },
+            grace: '10%',
+            ticks: { color: tema.muted, font: { size: 11, family: FONTE_GRAFICO }, callback: v => formatMoedaCompacta(v) }
+          }, extra.y || {})
+        }
+      };
+    }
+
+    // Legenda em HTML: chave colorida + nome em tinta de texto (a cor
+    // identifica a série pela chave, nunca pelo texto). Nomes entram por
+    // textContent. tipo: 'barra' | 'linha' | 'ponto'
+    function renderizarLegendaGrafico(n, itens) {
+      const el = document.getElementById('grafLegenda' + n);
+      if (!el) return;
+      el.textContent = '';
+      itens.forEach(it => {
+        const item = document.createElement('span');
+        item.className = 'leg-item';
+        const chave = document.createElement('span');
+        chave.className = 'leg-chave leg-chave-' + it.tipo;
+        if (it.tipo === 'linha') chave.style.borderTopColor = it.cor;
+        else chave.style.backgroundColor = it.cor;
+        item.appendChild(chave);
+        const rotulo = document.createElement('span');
+        rotulo.textContent = it.rotulo;
+        item.appendChild(rotulo);
+        el.appendChild(item);
+      });
+    }
+
+    // ── Infraestrutura: cartão de cada gráfico (área, vazio, tabela, nota) ──
+    const graficosVisaoGeral = { 1: null, 2: null, 3: null };
+    const modoTabelaGrafico = { 1: false, 2: false, 3: false };
+
+    function aplicarModoGrafico(n, temDados, mensagemVazia) {
+      const area = document.getElementById('grafArea' + n);
+      const tabela = document.getElementById('grafTabela' + n);
+      const vazio = document.getElementById('grafVazio' + n);
+      const botao = document.getElementById('btnTabela' + n);
+      const legenda = document.getElementById('grafLegenda' + n);
+      if (legenda) legenda.hidden = !temDados || modoTabelaGrafico[n];
+      if (vazio) {
+        vazio.style.display = temDados ? 'none' : 'block';
+        if (!temDados) vazio.textContent = mensagemVazia || '';
+      }
+      if (botao) {
+        botao.style.display = temDados ? '' : 'none';
+        botao.textContent = modoTabelaGrafico[n] ? 'Ver gráfico' : 'Ver tabela';
+      }
+      if (area) area.hidden = !temDados || modoTabelaGrafico[n];
+      if (tabela) tabela.hidden = !temDados || !modoTabelaGrafico[n];
+      if (!temDados && graficosVisaoGeral[n]) {
+        graficosVisaoGeral[n].destroy();
+        graficosVisaoGeral[n] = null;
+      }
+    }
+
+    function alternarTabelaGrafico(n) {
+      modoTabelaGrafico[n] = !modoTabelaGrafico[n];
+      const area = document.getElementById('grafArea' + n);
+      const tabela = document.getElementById('grafTabela' + n);
+      const botao = document.getElementById('btnTabela' + n);
+      const legenda = document.getElementById('grafLegenda' + n);
+      if (legenda) legenda.hidden = modoTabelaGrafico[n];
+      if (area) area.hidden = modoTabelaGrafico[n];
+      if (tabela) tabela.hidden = !modoTabelaGrafico[n];
+      if (botao) botao.textContent = modoTabelaGrafico[n] ? 'Ver gráfico' : 'Ver tabela';
+      if (!modoTabelaGrafico[n] && graficosVisaoGeral[n]) graficosVisaoGeral[n].resize();
+    }
+
+    // Tabela equivalente ao gráfico — todo valor também é legível sem
+    // passar o mouse. Textos entram por textContent (nunca innerHTML).
+    function renderizarTabelaGrafico(n, colunas, linhas) {
+      const el = document.getElementById('grafTabela' + n);
+      if (!el) return;
+      el.textContent = '';
+      const tabela = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      colunas.forEach(c => {
+        const th = document.createElement('th');
+        th.textContent = c;
+        trh.appendChild(th);
+      });
+      thead.appendChild(trh);
+      tabela.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      linhas.forEach(l => {
+        const tr = document.createElement('tr');
+        l.forEach(v => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      tabela.appendChild(tbody);
+      el.appendChild(tabela);
+    }
+
+    function definirNotaGrafico(n, partes) {
+      const el = document.getElementById('grafNota' + n);
+      if (!el) return;
+      el.textContent = (partes || []).filter(Boolean).join(' ');
+    }
+
+    function criarGrafico(n, canvasId, config) {
+      if (graficosVisaoGeral[n]) {
+        graficosVisaoGeral[n].destroy();
+        graficosVisaoGeral[n] = null;
+      }
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      graficosVisaoGeral[n] = new Chart(canvas, config);
+    }
+
+    // Sem a biblioteca do Chart.js (ex: sem internet) o painel não trava:
+    // a tabela de cada gráfico continua disponível
+    function biblioteca() {
+      return typeof Chart !== 'undefined';
+    }
+
+    // ── Gráfico 1 ──
+    function atualizarGraficoReceitaDespesas() {
+      const serie = montarSerieMensal();
+      if (serie.length === 0) {
+        aplicarModoGrafico(1, false, 'Importe ao menos uma fatura de cartão ou um extrato para ver a evolução mês a mês.');
+        definirNotaGrafico(1, []);
+        return;
+      }
+
+      aplicarModoGrafico(1, true);
+      renderizarTabelaGrafico(1,
+        ['Mês', 'Receita', 'Despesas', 'Resultado', 'Situação', 'Fixas', 'Cartão', 'Extrato'],
+        serie.map(s => [
+          nomeMesLegivel(s.mes),
+          formatCurrency(s.receita),
+          formatCurrency(s.despesas),
+          formatCurrency(s.resultado),
+          s.resultado >= 0 ? 'Superávit' : 'Déficit',
+          formatCurrency(s.fixas),
+          s.temCartao ? formatCurrency(s.cartaoConsiderado) : 'sem fatura',
+          s.temExtrato ? formatCurrency(s.extratoConsiderado) : 'sem extrato'
+        ])
+      );
+
+      const incompletos = serie.filter(s => !s.temCartao);
+      const emDeficit = serie.filter(s => s.temCartao && s.resultado < 0);
+      definirNotaGrafico(1, [
+        emDeficit.length
+          ? `Déficit nos meses com fatura: ${emDeficit.map(s => s.rotulo).join(', ')}.`
+          : 'Nenhum mês com fatura importada fechou em déficit.',
+        incompletos.length
+          ? `Barras claras (${incompletos.map(s => s.rotulo).join(', ')}): sem fatura de cartão importada, então a despesa está subestimada.`
+          : ''
+      ]);
+
+      if (!biblioteca()) return;
+      const tema = temaGrafico();
+      const indiceSelecionado = serie.findIndex(s => s.mes === mesSelecionado);
+      renderizarLegendaGrafico(1, [
+        { tipo: 'barra', cor: tema.serie[0], rotulo: 'Receita' },
+        { tipo: 'barra', cor: tema.serie[1], rotulo: 'Despesas' },
+        { tipo: 'linha', cor: tema.textoSec, rotulo: 'Resultado' },
+        { tipo: 'ponto', cor: tema.bom, rotulo: 'superávit' },
+        { tipo: 'ponto', cor: tema.critico, rotulo: 'déficit' }
+      ]);
+      const config = {
+        type: 'bar',
+        data: {
+          labels: serie.map(s => (s.temCartao ? s.rotulo : [s.rotulo, 'sem fatura'])),
+          datasets: [
+            {
+              type: 'bar', label: 'Receita', data: serie.map(s => s.receita),
+              backgroundColor: serie.map(s => (s.temCartao ? tema.serie[0] : corComAlpha(tema.serie[0], 0.35))),
+              hoverBackgroundColor: serie.map(s => (s.temCartao ? tema.serie[0] : corComAlpha(tema.serie[0], 0.35))),
+              borderColor: tema.superficie, borderWidth: 2, borderRadius: 4, borderSkipped: 'start',
+              maxBarThickness: 24, order: 2
+            },
+            {
+              type: 'bar', label: 'Despesas', data: serie.map(s => s.despesas),
+              backgroundColor: serie.map(s => (s.temCartao ? tema.serie[1] : corComAlpha(tema.serie[1], 0.35))),
+              hoverBackgroundColor: serie.map(s => (s.temCartao ? tema.serie[1] : corComAlpha(tema.serie[1], 0.35))),
+              borderColor: tema.superficie, borderWidth: 2, borderRadius: 4, borderSkipped: 'start',
+              maxBarThickness: 24, order: 2
+            },
+            {
+              type: 'line', label: 'Resultado', data: serie.map(s => s.resultado),
+              borderColor: tema.textoSec, borderWidth: 2, tension: 0,
+              pointRadius: 4, pointHoverRadius: 6, pointHitRadius: 14,
+              pointBackgroundColor: serie.map(s => (s.resultado >= 0 ? tema.bom : tema.critico)),
+              pointBorderColor: tema.superficie, pointBorderWidth: 2,
+              order: 1, rotuloFim: 'Resultado'
+            }
+          ]
+        },
+        options: opcoesComuns(tema, {
+          plugins: {
+            rotulosFim: { cor: tema.textoSec, halo: tema.superficie },
+            destaqueMes: { indice: indiceSelecionado, cor: corComAlpha(tema.serie[0], 0.10) },
+            tooltip: {
+              callbacks: {
+                title: itens => nomeMesLegivel(serie[itens[0].dataIndex].mes),
+                label: ctx => {
+                  const v = ctx.parsed.y;
+                  if (ctx.dataset.label === 'Resultado') {
+                    return `${formatCurrency(v)}  Resultado (${v >= 0 ? '▲ superávit' : '▼ déficit'})`;
+                  }
+                  return `${formatCurrency(v)}  ${ctx.dataset.label}`;
+                },
+                afterBody: itens => {
+                  const s = serie[itens[0].dataIndex];
+                  const linhas = [
+                    `Fixas ${formatCurrency(s.fixas)} · Cartão ${formatCurrency(s.cartaoConsiderado)} · Extrato ${formatCurrency(s.extratoConsiderado)}`
+                  ];
+                  if (!s.temCartao) linhas.push('⚠ Sem fatura de cartão importada: despesa subestimada.');
+                  else if (!s.temExtrato) linhas.push('Sem extrato importado neste mês.');
+                  return linhas;
+                }
+              }
+            }
+          }
+        }),
+        plugins: [rotulosFimPlugin, destaqueMesPlugin]
+      };
+      try {
+        criarGrafico(1, 'grafReceitaDespesas', config);
+      } catch (err) {
+        aplicarModoGrafico(1, false, 'Não foi possível desenhar o gráfico. A tabela continua disponível em "Ver tabela".');
+      }
+    }
+
+    // ── Gráfico 2 ──
+    function atualizarGraficoProjecao() {
+      const serie = montarSerieProjecao();
+      const temBase = serie.some(s => s.receita > 0 || s.fixas > 0);
+      if (serie.length === 0 || !temBase) {
+        aplicarModoGrafico(2, false, 'Preencha Receita e Despesas Fixas de algum mês para ver a projeção dos próximos meses.');
+        definirNotaGrafico(2, []);
+        return;
+      }
+
+      aplicarModoGrafico(2, true);
+      renderizarTabelaGrafico(2,
+        ['Mês', 'Receita', 'Despesas fixas', 'Parcelas já comprometidas', 'Folga p/ gastos novos', 'Origem da receita e fixas'],
+        serie.map(s => [
+          nomeMesLegivel(s.mes),
+          formatCurrency(s.receita),
+          formatCurrency(s.fixas),
+          formatCurrency(s.parcelas),
+          formatCurrency(s.folga),
+          s.origem ? (s.estimado ? `repete ${nomeMesLegivel(s.origem)}` : 'preenchido no mês') : 'sem dados'
+        ])
+      );
+
+      const menor = serie.reduce((a, b) => (b.folga < a.folga ? b : a));
+      const maior = serie.reduce((a, b) => (b.folga > a.folga ? b : a));
+      const negativos = serie.filter(s => s.folga < 0);
+      const estimados = serie.filter(s => s.estimado && s.origem);
+      definirNotaGrafico(2, [
+        `Folga = receita − fixas − parcelas já comprometidas (compras novas e extrato ficam de fora).`,
+        negativos.length
+          ? `⚠ Em ${negativos.map(s => s.rotulo).join(', ')} os compromissos já superam a receita.`
+          : `Menor folga: ${formatCurrency(menor.folga)} em ${menor.rotulo}; maior: ${formatCurrency(maior.folga)} em ${maior.rotulo}.`,
+        estimados.length
+          ? `Receita e fixas repetem ${nomeMesLegivel(estimados[0].origem)} nos meses ainda não preenchidos.`
+          : ''
+      ]);
+
+      if (!biblioteca()) return;
+      const tema = temaGrafico();
+      renderizarLegendaGrafico(2, [
+        { tipo: 'barra', cor: tema.serie[1], rotulo: 'Despesas fixas' },
+        { tipo: 'barra', cor: tema.serie[2], rotulo: 'Parcelas já comprometidas' },
+        { tipo: 'linha', cor: tema.serie[0], rotulo: 'Receita' }
+      ]);
+      const config = {
+        type: 'bar',
+        data: {
+          labels: serie.map(s => s.rotulo),
+          datasets: [
+            {
+              type: 'bar', label: 'Despesas fixas', data: serie.map(s => s.fixas), stack: 'compromissos',
+              backgroundColor: tema.serie[1], hoverBackgroundColor: tema.serie[1], borderColor: tema.superficie, borderWidth: 2, borderRadius: 4,
+              borderSkipped: 'start', maxBarThickness: 24, order: 2
+            },
+            {
+              type: 'bar', label: 'Parcelas já comprometidas', data: serie.map(s => s.parcelas), stack: 'compromissos',
+              backgroundColor: tema.serie[2], hoverBackgroundColor: tema.serie[2], borderColor: tema.superficie, borderWidth: 2, borderRadius: 4,
+              borderSkipped: 'start', maxBarThickness: 24, order: 2
+            },
+            {
+              type: 'line', label: 'Receita', data: serie.map(s => s.receita),
+              borderColor: tema.serie[0], borderWidth: 2, tension: 0,
+              pointRadius: 4, pointHoverRadius: 6, pointHitRadius: 14,
+              pointBackgroundColor: tema.serie[0], pointBorderColor: tema.superficie, pointBorderWidth: 2,
+              order: 1, rotuloFim: 'Receita'
+            }
+          ]
+        },
+        options: opcoesComuns(tema, {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true },
+          plugins: {
+            rotulosFim: { cor: tema.textoSec, halo: tema.superficie },
+            tooltip: {
+              callbacks: {
+                title: itens => nomeMesLegivel(serie[itens[0].dataIndex].mes),
+                label: ctx => `${formatCurrency(ctx.parsed.y)}  ${ctx.dataset.label}`,
+                afterBody: itens => {
+                  const s = serie[itens[0].dataIndex];
+                  const linhas = [s.folga >= 0
+                    ? `▲ Folga para gastos novos: ${formatCurrency(s.folga)}`
+                    : `▼ Faltam ${formatCurrency(-s.folga)} só para cobrir os compromissos`];
+                  if (s.estimado && s.origem) linhas.push(`Receita e fixas repetem ${nomeMesLegivel(s.origem)} (estimativa).`);
+                  return linhas;
+                }
+              }
+            }
+          }
+        }),
+        plugins: [rotulosFimPlugin]
+      };
+      try {
+        criarGrafico(2, 'grafProjecao', config);
+      } catch (err) {
+        aplicarModoGrafico(2, false, 'Não foi possível desenhar o gráfico. A tabela continua disponível em "Ver tabela".');
+      }
+    }
+
+    // ── Gráfico 3 ──
+    function atualizarGraficoRitmo() {
+      const titulo = document.getElementById('grafTitulo3');
+      if (titulo) titulo.textContent = `Ritmo de gasto em ${nomeMesLegivel(mesSelecionado)}`;
+
+      const ritmo = montarSerieRitmo(mesSelecionado);
+      if (ritmo.vazio) {
+        aplicarModoGrafico(3, false, 'Este mês ainda não tem lançamentos com data (fatura de cartão ou extrato importados).');
+        definirNotaGrafico(3, []);
+        return;
+      }
+
+      aplicarModoGrafico(3, true);
+      const receita = ritmo.resumo.receita;
+      renderizarTabelaGrafico(3,
+        ['Data', 'Gasto do dia', 'Acumulado', 'Receita'],
+        ritmo.pontos.map(p => [
+          p.inicio ? 'Início (fixas + parcelas)' : p.rotulo,
+          formatCurrency(p.gastoDia),
+          formatCurrency(p.acumulado),
+          formatCurrency(receita)
+        ])
+      );
+
+      let veredito;
+      if (receita <= 0) {
+        veredito = 'Informe a receita do mês para comparar com o gasto acumulado.';
+      } else if (ritmo.indiceEstouro === 0) {
+        veredito = `⚠ Só as despesas fixas e parcelas (${formatCurrency(ritmo.base)}) já superam a receita (${formatCurrency(receita)}), antes de qualquer compra do mês.`;
+      } else if (ritmo.indiceEstouro > 0) {
+        veredito = `⚠ O gasto acumulado passa da receita em ${ritmo.pontos[ritmo.indiceEstouro].rotulo}.`;
+      } else {
+        const ultimo = ritmo.pontos[ritmo.pontos.length - 1];
+        veredito = `Dentro da receita: sobram ${formatCurrency(receita - ultimo.acumulado)} no fechamento.`;
+      }
+      definirNotaGrafico(3, [
+        veredito,
+        `O ponto "Início" reúne despesas fixas, parcelas (a fatura mostra nelas a data da compra original) e itens sem data; depois cada dia soma cartão + extrato.`,
+        'É o ritmo de compra, não o caixa: o cartão só é pago no vencimento da fatura.'
+      ]);
+
+      if (!biblioteca()) return;
+      const tema = temaGrafico();
+      const rotulos = ritmo.pontos.map(p => p.rotulo);
+      renderizarLegendaGrafico(3, [
+        { tipo: 'linha', cor: tema.serie[1], rotulo: 'Despesas acumuladas' }
+      ].concat(receita > 0 ? [{ tipo: 'linha', cor: tema.serie[0], rotulo: 'Receita' }] : []));
+      const config = {
+        type: 'line',
+        data: {
+          labels: rotulos,
+          datasets: [
+            {
+              label: 'Despesas acumuladas', data: ritmo.pontos.map(p => p.acumulado),
+              borderColor: tema.serie[1], borderWidth: 2, tension: 0,
+              backgroundColor: corComAlpha(tema.serie[1], 0.1), fill: 'origin',
+              pointRadius: ritmo.pontos.map(p => (p.inicio ? 4 : 0)),
+              pointHoverRadius: 5, pointHitRadius: 14,
+              pointBackgroundColor: tema.serie[1], pointBorderColor: tema.superficie, pointBorderWidth: 2,
+              order: 1, rotuloFim: 'Despesas'
+            },
+            ...(receita > 0 ? [{
+              label: 'Receita', data: rotulos.map(() => receita),
+              borderColor: tema.serie[0], borderWidth: 2, tension: 0, fill: false,
+              pointRadius: 0, pointHoverRadius: 0, pointHitRadius: 0,
+              order: 2, rotuloFim: 'Receita'
+            }] : [])
+          ]
+        },
+        options: opcoesComuns(tema, {
+          x: { ticks: { color: tema.textoSec, font: { size: 11, family: FONTE_GRAFICO }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+          y: { beginAtZero: true },
+          plugins: {
+            rotulosFim: { cor: tema.textoSec, halo: tema.superficie },
+            crosshair: { cor: tema.eixo },
+            tooltip: {
+              callbacks: {
+                title: itens => {
+                  const p = ritmo.pontos[itens[0].dataIndex];
+                  return p.inicio ? 'Início: fixas + parcelas' : p.rotulo;
+                },
+                label: ctx => `${formatCurrency(ctx.parsed.y)}  ${ctx.dataset.label === 'Receita' ? 'Receita' : 'Despesas acumuladas'}`,
+                afterBody: itens => {
+                  const p = ritmo.pontos[itens[0].dataIndex];
+                  return p.inicio ? [] : [`Gasto do dia: ${formatCurrency(p.gastoDia)}`];
+                }
+              }
+            }
+          }
+        }),
+        plugins: [rotulosFimPlugin, crosshairPlugin]
+      };
+      try {
+        criarGrafico(3, 'grafRitmo', config);
+      } catch (err) {
+        aplicarModoGrafico(3, false, 'Não foi possível desenhar o gráfico. A tabela continua disponível em "Ver tabela".');
+      }
+    }
+
+    // Chamado por atualizarResumo() — ou seja, a cada mudança de dado ou de
+    // mês. Seção recolhida não desenha (o canvas teria tamanho zero); ao
+    // expandir, redesenha.
+    function atualizarGraficosVisaoGeral() {
+      const corpo = document.getElementById('graficosCorpo');
+      if (corpo && corpo.style.display === 'none') return;
+      atualizarGraficoReceitaDespesas();
+      atualizarGraficoProjecao();
+      atualizarGraficoRitmo();
+    }
+
+    function alternarGraficos() {
+      const corpo = document.getElementById('graficosCorpo');
+      const botao = document.getElementById('btnRecolherGraficos');
+      if (!corpo) return;
+      const estavaRecolhido = corpo.style.display === 'none';
+      corpo.style.display = estavaRecolhido ? '' : 'none';
+      if (botao) botao.textContent = estavaRecolhido ? 'Recolher' : 'Expandir';
+      if (estavaRecolhido) atualizarGraficosVisaoGeral();
+    }
+
+    // As cores dos gráficos são lidas no momento do desenho; se o sistema
+    // trocar entre claro e escuro, redesenha
 
     init();
   </script>
